@@ -8,8 +8,10 @@ import {
   Route,
   Shield,
   ShieldCheck,
+  Wallet,
 } from 'lucide-react';
 import { useEventData } from '../../state/EventDataContext';
+import { OrganizerChipInLedger } from '../chip-in/OrganizerChipInLedger';
 import { OrganizerAnnouncementsEditor } from './OrganizerAnnouncementsEditor';
 import { OrganizerCoursesEditor } from './OrganizerCoursesEditor';
 import { OrganizerEventEditor } from './OrganizerEventEditor';
@@ -20,6 +22,7 @@ export type OrganizerSectionId =
   | 'event'
   | 'courses'
   | 'announcements'
+  | 'chip-ins'
   | 'secrets'
   | 'export'
   | string;
@@ -32,11 +35,12 @@ export interface OrganizerTabExtension {
 }
 
 interface OrganizerModePanelProps {
-  /** Extension slots for downstream features (Chip-Ins, Supplies & Teams, Badges, Export). */
+  /** Extension slots for downstream features (Supplies & Teams, Badges, Export). */
   extraTabs?: ReadonlyArray<OrganizerTabExtension>;
   renderEventEditor?: () => ReactNode;
   renderCoursesEditor?: () => ReactNode;
   renderAnnouncementsEditor?: () => ReactNode;
+  renderChipInsLedger?: () => ReactNode;
   renderSecretsSection?: () => ReactNode;
   renderExportSection?: () => ReactNode;
 }
@@ -46,6 +50,7 @@ export function OrganizerModePanel({
   renderEventEditor,
   renderCoursesEditor,
   renderAnnouncementsEditor,
+  renderChipInsLedger,
   renderSecretsSection,
   renderExportSection,
 }: OrganizerModePanelProps) {
@@ -233,6 +238,7 @@ export function OrganizerModePanel({
     { id: 'event', label: 'Event', icon: <CalendarCog size={15} strokeWidth={2.25} aria-hidden="true" /> },
     { id: 'courses', label: 'Courses', icon: <Route size={15} strokeWidth={2.25} aria-hidden="true" /> },
     { id: 'announcements', label: 'Announcements', icon: <Megaphone size={15} strokeWidth={2.25} aria-hidden="true" /> },
+    { id: 'chip-ins', label: 'Chip-Ins', icon: <Wallet size={15} strokeWidth={2.25} aria-hidden="true" /> },
     { id: 'secrets', label: 'Access & QR', icon: <KeyRound size={15} strokeWidth={2.25} aria-hidden="true" /> },
     { id: 'export', label: 'Export', icon: <Download size={15} strokeWidth={2.25} aria-hidden="true" /> },
   ];
@@ -329,6 +335,8 @@ export function OrganizerModePanel({
         {activeTab === 'courses' && (renderCoursesEditor ? renderCoursesEditor() : <OrganizerCoursesEditor />)}
         {activeTab === 'announcements' &&
           (renderAnnouncementsEditor ? renderAnnouncementsEditor() : <OrganizerAnnouncementsEditor />)}
+        {activeTab === 'chip-ins' &&
+          (renderChipInsLedger ? renderChipInsLedger() : <OrganizerChipInLedger />)}
         {activeTab === 'secrets' &&
           (renderSecretsSection ? renderSecretsSection() : <OrganizerSecretsSection />)}
         {activeTab === 'export' &&
