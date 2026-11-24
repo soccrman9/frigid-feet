@@ -10,7 +10,12 @@ import {
   type SetStateAction,
 } from 'react';
 import type { EventApi } from '../lib/eventApi';
-import type { EventSnapshot, GrantScope } from '../types/domain';
+import type { EventSnapshot, GrantScope, Participant } from '../types/domain';
+import {
+  clearSavedParticipantId,
+  getSavedParticipantId,
+  saveParticipantId,
+} from '../features/participant/participantStorage';
 
 export interface EventDataContextValue {
   eventApi: EventApi;
@@ -21,6 +26,10 @@ export interface EventDataContextValue {
   isOnline: boolean;
   refreshing: boolean;
   lastSyncedAt: string | null;
+  activeParticipantId: string | null;
+  activeParticipant: Participant | null;
+  selectParticipant: (participantId: string) => void;
+  clearParticipant: () => void;
   headerRoundSlot: ReactNode;
   headerStatusSlot: ReactNode;
   setHeaderRoundSlot: (node: ReactNode) => void;
@@ -49,6 +58,9 @@ export function EventDataProvider({
 }: EventDataProviderProps) {
   const [snapshot, setSnapshot] = useState<EventSnapshot>(initialSnapshot);
   const [grants, setGrants] = useState<GrantScope[]>(initialGrants);
+  const [activeParticipantId, setActiveParticipantId] = useState<string | null>(() =>
+    getSavedParticipantId(eventId),
+  );
   const [isOnline, setIsOnline] = useState<boolean>(
     typeof navigator !== 'undefined' ? navigator.onLine : true,
   );
@@ -64,6 +76,40 @@ export function EventDataProvider({
   useEffect(() => {
     setGrants(initialGrants);
   }, [initialGrants]);
+
+  useEffect(() => {
+    setActiveParticipantId(getSavedParticipantId(eventId));
+  }, [eventId]);
+
+  const activeParticipant = useMemo(
+    () =>
+      activeParticipantId
+        ? (snapshot.participants.find((participant) => participant.id === activeParticipantId) ??
+          null)
+        : null,
+    [activeParticipantId, snapshot.participants],
+  );
+
+  // If a saved participant_id no longer exists on the server, clear it and fall back cleanly.
+  useEffect(() => {
+    if (activeParticipantId && !activeParticipant) {
+      clearSavedParticipantId(eventId);
+      setActiveParticipantId(null);
+    }
+  }, [activeParticipantId, activeParticipant, eventId]);
+
+  const selectParticipant = useCallback(
+    (participantId: string) => {
+      saveParticipantId(eventId, participantId);
+      setActiveParticipantId(participantId);
+    },
+    [eventId],
+  );
+
+  const clearParticipant = useCallback(() => {
+    clearSavedParticipantId(eventId);
+    setActiveParticipantId(null);
+  }, [eventId]);
 
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
@@ -104,6 +150,10 @@ export function EventDataProvider({
       isOnline,
       refreshing,
       lastSyncedAt,
+      activeParticipantId: activeParticipant ? activeParticipant.id : null,
+      activeParticipant,
+      selectParticipant,
+      clearParticipant,
       headerRoundSlot,
       headerStatusSlot,
       setHeaderRoundSlot,
@@ -120,6 +170,9 @@ export function EventDataProvider({
       isOnline,
       refreshing,
       lastSyncedAt,
+      activeParticipant,
+      selectParticipant,
+      clearParticipant,
       headerRoundSlot,
       headerStatusSlot,
       refreshSnapshot,
