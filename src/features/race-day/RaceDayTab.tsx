@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { Award, ArrowLeft, Medal, Timer } from 'lucide-react';
+import { Award, ArrowLeft, Timer } from 'lucide-react';
 import type { Leg } from '../../types/domain';
 import { useEventData, type LegMutationActionType } from '../../state/EventDataContext';
+import { BadgesSubView } from '../badges/BadgesSubView';
 import { LegEditorDialog, type LegEditorSavePayload } from './LegEditorDialog';
 import {
   RaceDayToasts,
@@ -479,25 +480,7 @@ export function RaceDayTab({
             renderBadgesView ? (
               renderBadgesView()
             ) : (
-              <section
-                aria-label="Badges"
-                className="rounded-[6px] border-[1.5px] p-4"
-                style={{
-                  backgroundColor: 'var(--bg-surface)',
-                  borderColor: 'var(--border-strong)',
-                }}
-              >
-                <div className="flex items-center gap-2">
-                  <Medal size={18} style={{ color: 'var(--accent-amber-ink)' }} aria-hidden="true" />
-                  <h2 className="text-base font-bold" style={{ color: 'var(--ink-primary)' }}>
-                    Badges
-                  </h2>
-                </div>
-                <p className="mt-1.5 text-sm" style={{ color: 'var(--ink-secondary)' }}>
-                  Live Team & Participant Badges and Organizer superlatives will appear here as
-                  Legs are completed.
-                </p>
-              </section>
+              <BadgesSubView />
             )
           ) : renderSpeedBoardView ? (
             renderSpeedBoardView()

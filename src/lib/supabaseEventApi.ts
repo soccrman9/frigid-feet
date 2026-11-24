@@ -1025,13 +1025,21 @@ export class SupabaseEventApi implements EventApi {
     eventId: string,
     data: Omit<BadgeDefinition, 'id' | 'eventId'>,
   ): Promise<BadgeDefinition> {
+    const name = data.name.trim();
+    const emoji = data.emoji.trim();
+    if (!name) {
+      throw new EventAccessError('VALIDATION_ERROR', 'Badge name cannot be empty.');
+    }
+    if (!emoji) {
+      throw new EventAccessError('VALIDATION_ERROR', 'Badge emoji cannot be empty.');
+    }
     const { data: row, error } = await this.client
       .from('badge_definitions')
       .insert({
         event_id: eventId,
-        name: data.name,
-        emoji: data.emoji,
-        description: data.description,
+        name,
+        emoji,
+        description: data.description?.trim() ? data.description.trim() : null,
         is_preset: data.isPreset,
       })
       .select('*')
@@ -1041,18 +1049,33 @@ export class SupabaseEventApi implements EventApi {
   }
 
   async deleteBadgeDefinition(eventId: string, badgeDefinitionId: string): Promise<void> {
-    const { error } = await this.client
+    const { data, error } = await this.client
       .from('badge_definitions')
       .delete()
       .eq('event_id', eventId)
-      .eq('id', badgeDefinitionId);
+      .eq('id', badgeDefinitionId)
+      .select('id');
     if (error) handleSupabaseError(error);
+    if (!data || data.length === 0) {
+      throw new EventAccessError(
+        'FORBIDDEN',
+        'You do not have permission to delete this Badge definition.',
+      );
+    }
   }
 
   async createBadgeAward(
     eventId: string,
     data: Omit<BadgeAward, 'id' | 'eventId' | 'awardedAt'>,
   ): Promise<BadgeAward> {
+    const hasParticipant = data.participantId !== null;
+    const hasTeam = data.teamId !== null;
+    if (hasParticipant === hasTeam) {
+      throw new EventAccessError(
+        'VALIDATION_ERROR',
+        'Badge award must target either a Participant or a Team, not both or neither.',
+      );
+    }
     const { data: row, error } = await this.client
       .from('badge_awards')
       .insert({
@@ -1060,7 +1083,7 @@ export class SupabaseEventApi implements EventApi {
         badge_definition_id: data.badgeDefinitionId,
         participant_id: data.participantId,
         team_id: data.teamId,
-        note: data.note,
+        note: data.note?.trim() ? data.note.trim() : null,
       })
       .select('*')
       .single();
@@ -1069,12 +1092,19 @@ export class SupabaseEventApi implements EventApi {
   }
 
   async deleteBadgeAward(eventId: string, badgeAwardId: string): Promise<void> {
-    const { error } = await this.client
+    const { data, error } = await this.client
       .from('badge_awards')
       .delete()
       .eq('event_id', eventId)
-      .eq('id', badgeAwardId);
+      .eq('id', badgeAwardId)
+      .select('id');
     if (error) handleSupabaseError(error);
+    if (!data || data.length === 0) {
+      throw new EventAccessError(
+        'FORBIDDEN',
+        'You do not have permission to revoke this Badge award.',
+      );
+    }
   }
 
   subscribeToEvent(eventId: string, handlers: RealtimeSubscriptionHandlers): Unsubscribe {

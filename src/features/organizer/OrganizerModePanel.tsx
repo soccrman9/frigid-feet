@@ -1,5 +1,6 @@
 import { useState, type FormEvent, type ReactNode } from 'react';
 import {
+  Award,
   CalendarCog,
   Download,
   KeyRound,
@@ -11,6 +12,7 @@ import {
   Wallet,
 } from 'lucide-react';
 import { useEventData } from '../../state/EventDataContext';
+import { OrganizerBadgesSection } from '../badges/OrganizerBadgesSection';
 import { OrganizerChipInLedger } from '../chip-in/OrganizerChipInLedger';
 import { OrganizerAnnouncementsEditor } from './OrganizerAnnouncementsEditor';
 import { OrganizerCoursesEditor } from './OrganizerCoursesEditor';
@@ -23,6 +25,7 @@ export type OrganizerSectionId =
   | 'courses'
   | 'announcements'
   | 'chip-ins'
+  | 'badges'
   | 'secrets'
   | 'export'
   | string;
@@ -35,12 +38,13 @@ export interface OrganizerTabExtension {
 }
 
 interface OrganizerModePanelProps {
-  /** Extension slots for downstream features (Supplies & Teams, Badges, Export). */
+  /** Extension slots for downstream features (Supplies & Teams). */
   extraTabs?: ReadonlyArray<OrganizerTabExtension>;
   renderEventEditor?: () => ReactNode;
   renderCoursesEditor?: () => ReactNode;
   renderAnnouncementsEditor?: () => ReactNode;
   renderChipInsLedger?: () => ReactNode;
+  renderBadgesSection?: () => ReactNode;
   renderSecretsSection?: () => ReactNode;
   renderExportSection?: () => ReactNode;
 }
@@ -51,6 +55,7 @@ export function OrganizerModePanel({
   renderCoursesEditor,
   renderAnnouncementsEditor,
   renderChipInsLedger,
+  renderBadgesSection,
   renderSecretsSection,
   renderExportSection,
 }: OrganizerModePanelProps) {
@@ -239,6 +244,7 @@ export function OrganizerModePanel({
     { id: 'courses', label: 'Courses', icon: <Route size={15} strokeWidth={2.25} aria-hidden="true" /> },
     { id: 'announcements', label: 'Announcements', icon: <Megaphone size={15} strokeWidth={2.25} aria-hidden="true" /> },
     { id: 'chip-ins', label: 'Chip-Ins', icon: <Wallet size={15} strokeWidth={2.25} aria-hidden="true" /> },
+    { id: 'badges', label: 'Badges', icon: <Award size={15} strokeWidth={2.25} aria-hidden="true" /> },
     { id: 'secrets', label: 'Access & QR', icon: <KeyRound size={15} strokeWidth={2.25} aria-hidden="true" /> },
     { id: 'export', label: 'Backup & Export', icon: <Download size={15} strokeWidth={2.25} aria-hidden="true" /> },
   ];
@@ -337,6 +343,8 @@ export function OrganizerModePanel({
           (renderAnnouncementsEditor ? renderAnnouncementsEditor() : <OrganizerAnnouncementsEditor />)}
         {activeTab === 'chip-ins' &&
           (renderChipInsLedger ? renderChipInsLedger() : <OrganizerChipInLedger />)}
+        {activeTab === 'badges' &&
+          (renderBadgesSection ? renderBadgesSection() : <OrganizerBadgesSection />)}
         {activeTab === 'secrets' &&
           (renderSecretsSection ? renderSecretsSection() : <OrganizerSecretsSection />)}
         {activeTab === 'export' &&
