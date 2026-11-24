@@ -27,6 +27,7 @@ interface VolunteeredSuppliesSectionProps {
   items: SupplyItem[];
   participantsById: ReadonlyMap<string, Participant>;
   activeParticipant: Participant | null;
+  isOrganizer?: boolean;
   isOnline: boolean;
   onAdd: (name: string, category: SupplyCategory) => Promise<void>;
   onUpdate: (supplyItemId: string, name: string, category: SupplyCategory) => Promise<void>;
@@ -37,6 +38,7 @@ export function VolunteeredSuppliesSection({
   items,
   participantsById,
   activeParticipant,
+  isOrganizer = false,
   isOnline,
   onAdd,
   onUpdate,
@@ -132,7 +134,9 @@ export function VolunteeredSuppliesSection({
   }
 
   async function handleDelete(item: SupplyItem) {
-    if (!activeParticipant || item.createdByParticipantId !== activeParticipant.id) return;
+    const isOwnItem =
+      activeParticipant !== null && item.createdByParticipantId === activeParticipant.id;
+    if (!isOwnItem && !isOrganizer) return;
     if (!isOnline) {
       setErrorMessage('Requires connection to delete a Supply.');
       return;
@@ -455,25 +459,28 @@ export function VolunteeredSuppliesSection({
                       </p>
                     </div>
 
-                    {isOwnItem && (
+                    {(isOwnItem || isOrganizer) && (
                       <div className="flex shrink-0 items-center gap-1.5">
+                        {isOwnItem && (
+                          <button
+                            type="button"
+                            disabled={isBusy || !isOnline}
+                            onClick={() => startEditing(item)}
+                            className="pfl-focus-ring inline-flex min-h-[44px] cursor-pointer items-center justify-center gap-1.5 rounded-md border-[1.5px] px-3 text-xs font-bold transition-opacity disabled:cursor-not-allowed disabled:opacity-60"
+                            style={{
+                              backgroundColor: 'var(--bg-surface)',
+                              borderColor: 'var(--border-strong)',
+                              color: 'var(--ink-primary)',
+                            }}
+                          >
+                            <Pencil size={14} strokeWidth={2.2} aria-hidden="true" />
+                            <span>{!isOnline ? 'Requires connection' : 'Edit'}</span>
+                          </button>
+                        )}
                         <button
                           type="button"
                           disabled={isBusy || !isOnline}
-                          onClick={() => startEditing(item)}
-                          className="pfl-focus-ring inline-flex min-h-[44px] cursor-pointer items-center justify-center gap-1.5 rounded-md border-[1.5px] px-3 text-xs font-bold transition-opacity disabled:cursor-not-allowed disabled:opacity-60"
-                          style={{
-                            backgroundColor: 'var(--bg-surface)',
-                            borderColor: 'var(--border-strong)',
-                            color: 'var(--ink-primary)',
-                          }}
-                        >
-                          <Pencil size={14} strokeWidth={2.2} aria-hidden="true" />
-                          <span>{!isOnline ? 'Requires connection' : 'Edit'}</span>
-                        </button>
-                        <button
-                          type="button"
-                          disabled={isBusy || !isOnline}
+                          aria-label={isOwnItem ? undefined : `Remove ${item.name}`}
                           onClick={() => void handleDelete(item)}
                           className="pfl-focus-ring inline-flex min-h-[44px] cursor-pointer items-center justify-center gap-1.5 rounded-md border-[1.5px] px-3 text-xs font-bold transition-opacity disabled:cursor-not-allowed disabled:opacity-60"
                           style={{
@@ -483,7 +490,15 @@ export function VolunteeredSuppliesSection({
                           }}
                         >
                           <Trash2 size={14} strokeWidth={2.2} aria-hidden="true" />
-                          <span>{isBusy ? 'Deleting…' : 'Delete'}</span>
+                          <span>
+                            {isBusy
+                              ? isOwnItem
+                                ? 'Deleting…'
+                                : 'Removing…'
+                              : isOwnItem
+                                ? 'Delete'
+                                : 'Remove'}
+                          </span>
                         </button>
                       </div>
                     )}

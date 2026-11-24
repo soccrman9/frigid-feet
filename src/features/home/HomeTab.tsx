@@ -1,4 +1,5 @@
 import { useEventData } from '../../state/EventDataContext';
+import { ChipInProgressCard } from '../chip-in/ChipInProgressCard';
 import { OrganizerModePanel } from '../organizer/OrganizerModePanel';
 import { ParticipantProfileCard } from '../participant/ParticipantProfileCard';
 import { AnnouncementsFeed } from './AnnouncementsFeed';
@@ -7,7 +8,7 @@ import { EventInfoSection } from './EventInfoSection';
 
 export function HomeTab() {
   const { snapshot } = useEventData();
-  const { event, rounds, courses, announcements, legs, teams } = snapshot;
+  const { event, rounds, courses, announcements, legs, teams, chipInTotalCents } = snapshot;
 
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-4 p-3 pb-6">
@@ -24,6 +25,8 @@ export function HomeTab() {
       <AnnouncementsFeed announcements={announcements} timezone={event.timezone} />
 
       <CoursesSection courses={courses} basecampName={event.basecampName} />
+
+      <ChipInProgressCard event={event} chipInTotalCents={chipInTotalCents} />
 
       <OrganizerModePanel />
     </div>

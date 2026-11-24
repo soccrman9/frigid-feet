@@ -2,21 +2,33 @@ import { useState, type FormEvent, type ReactNode } from 'react';
 import {
   Award,
   CalendarCog,
+  Download,
   KeyRound,
   Lock,
   Megaphone,
   Route,
   Shield,
   ShieldCheck,
+  Wallet,
 } from 'lucide-react';
 import { useEventData } from '../../state/EventDataContext';
 import { OrganizerBadgesSection } from '../badges/OrganizerBadgesSection';
+import { OrganizerChipInLedger } from '../chip-in/OrganizerChipInLedger';
 import { OrganizerAnnouncementsEditor } from './OrganizerAnnouncementsEditor';
 import { OrganizerCoursesEditor } from './OrganizerCoursesEditor';
 import { OrganizerEventEditor } from './OrganizerEventEditor';
+import { OrganizerExportSection } from './OrganizerExportSection';
 import { OrganizerSecretsSection } from './OrganizerSecretsSection';
 
-export type OrganizerSectionId = 'event' | 'courses' | 'announcements' | 'badges' | 'secrets' | string;
+export type OrganizerSectionId =
+  | 'event'
+  | 'courses'
+  | 'announcements'
+  | 'chip-ins'
+  | 'badges'
+  | 'secrets'
+  | 'export'
+  | string;
 
 export interface OrganizerTabExtension {
   id: string;
@@ -26,13 +38,15 @@ export interface OrganizerTabExtension {
 }
 
 interface OrganizerModePanelProps {
-  /** Extension slots for downstream features (Chip-Ins, Supplies & Teams, Export). */
+  /** Extension slots for downstream features (Supplies & Teams). */
   extraTabs?: ReadonlyArray<OrganizerTabExtension>;
   renderEventEditor?: () => ReactNode;
   renderCoursesEditor?: () => ReactNode;
   renderAnnouncementsEditor?: () => ReactNode;
+  renderChipInsLedger?: () => ReactNode;
   renderBadgesSection?: () => ReactNode;
   renderSecretsSection?: () => ReactNode;
+  renderExportSection?: () => ReactNode;
 }
 
 export function OrganizerModePanel({
@@ -40,8 +54,10 @@ export function OrganizerModePanel({
   renderEventEditor,
   renderCoursesEditor,
   renderAnnouncementsEditor,
+  renderChipInsLedger,
   renderBadgesSection,
   renderSecretsSection,
+  renderExportSection,
 }: OrganizerModePanelProps) {
   const { isOrganizer, isOnline, unlockOrganizer, lockOrganizer } = useEventData();
   const [promptOpen, setPromptOpen] = useState(false);
@@ -227,8 +243,10 @@ export function OrganizerModePanel({
     { id: 'event', label: 'Event', icon: <CalendarCog size={15} strokeWidth={2.25} aria-hidden="true" /> },
     { id: 'courses', label: 'Courses', icon: <Route size={15} strokeWidth={2.25} aria-hidden="true" /> },
     { id: 'announcements', label: 'Announcements', icon: <Megaphone size={15} strokeWidth={2.25} aria-hidden="true" /> },
+    { id: 'chip-ins', label: 'Chip-Ins', icon: <Wallet size={15} strokeWidth={2.25} aria-hidden="true" /> },
     { id: 'badges', label: 'Badges', icon: <Award size={15} strokeWidth={2.25} aria-hidden="true" /> },
     { id: 'secrets', label: 'Access & QR', icon: <KeyRound size={15} strokeWidth={2.25} aria-hidden="true" /> },
+    { id: 'export', label: 'Backup & Export', icon: <Download size={15} strokeWidth={2.25} aria-hidden="true" /> },
   ];
 
   const allTabs = [
@@ -323,10 +341,14 @@ export function OrganizerModePanel({
         {activeTab === 'courses' && (renderCoursesEditor ? renderCoursesEditor() : <OrganizerCoursesEditor />)}
         {activeTab === 'announcements' &&
           (renderAnnouncementsEditor ? renderAnnouncementsEditor() : <OrganizerAnnouncementsEditor />)}
+        {activeTab === 'chip-ins' &&
+          (renderChipInsLedger ? renderChipInsLedger() : <OrganizerChipInLedger />)}
         {activeTab === 'badges' &&
           (renderBadgesSection ? renderBadgesSection() : <OrganizerBadgesSection />)}
         {activeTab === 'secrets' &&
           (renderSecretsSection ? renderSecretsSection() : <OrganizerSecretsSection />)}
+        {activeTab === 'export' &&
+          (renderExportSection ? renderExportSection() : <OrganizerExportSection />)}
         {activeExtension && activeExtension.render()}
       </div>
     </section>
