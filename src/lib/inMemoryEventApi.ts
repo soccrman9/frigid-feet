@@ -909,10 +909,21 @@ export class InMemoryEventApi implements EventApi {
     data: Omit<BadgeDefinition, 'id' | 'eventId'>,
   ): Promise<BadgeDefinition> {
     this.requireGrant(eventId, ['organizer']);
+    const name = data.name.trim();
+    const emoji = data.emoji.trim();
+    if (!name) {
+      throw new EventAccessError('VALIDATION_ERROR', 'Badge name cannot be empty.');
+    }
+    if (!emoji) {
+      throw new EventAccessError('VALIDATION_ERROR', 'Badge emoji cannot be empty.');
+    }
     const record: BadgeDefinition = {
       id: generateId(),
       eventId,
-      ...data,
+      name,
+      emoji,
+      description: data.description?.trim() ? data.description.trim() : null,
+      isPreset: data.isPreset,
     };
     this.store.badgeDefinitions.set(record.id, record);
     this.store.notify(eventId);
@@ -921,8 +932,16 @@ export class InMemoryEventApi implements EventApi {
 
   async deleteBadgeDefinition(eventId: string, badgeDefinitionId: string): Promise<void> {
     this.requireGrant(eventId, ['organizer']);
-    this.store.badgeDefinitions.delete(badgeDefinitionId);
-    this.store.notify(eventId);
+    const existing = this.store.badgeDefinitions.get(badgeDefinitionId);
+    if (existing && existing.eventId === eventId) {
+      this.store.badgeDefinitions.delete(badgeDefinitionId);
+      for (const [awardId, award] of this.store.badgeAwards.entries()) {
+        if (award.eventId === eventId && award.badgeDefinitionId === badgeDefinitionId) {
+          this.store.badgeAwards.delete(awardId);
+        }
+      }
+      this.store.notify(eventId);
+    }
   }
 
   async createBadgeAward(
@@ -938,10 +957,17 @@ export class InMemoryEventApi implements EventApi {
         'Badge award must target either a Participant or a Team, not both or neither.',
       );
     }
+    const def = this.store.badgeDefinitions.get(data.badgeDefinitionId);
+    if (!def || def.eventId !== eventId) {
+      throw new EventAccessError('NOT_FOUND', 'Badge definition not found.');
+    }
     const record: BadgeAward = {
       id: generateId(),
       eventId,
-      ...data,
+      badgeDefinitionId: data.badgeDefinitionId,
+      participantId: data.participantId,
+      teamId: data.teamId,
+      note: data.note?.trim() ? data.note.trim() : null,
       awardedAt: new Date().toISOString(),
     };
     this.store.badgeAwards.set(record.id, record);
