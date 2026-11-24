@@ -11,6 +11,7 @@ import {
   LogOut,
   Pencil,
   Play,
+  ShieldCheck,
   Unlock,
   UserMinus,
   UserPlus,
@@ -428,6 +429,31 @@ export function RoundScheduleBuilder({
             appear when a Round is outside a Runner&apos;s RSVP window or back-to-back.
           </p>
         </div>
+
+        {/* Organizer Override notice when editing another Team's schedule */}
+        {isOrganizer && !isUsersTeam && (
+          <div
+            className="flex items-start gap-2 border-b px-4 py-2.5 text-xs"
+            style={{
+              backgroundColor: 'var(--accent-amber-soft)',
+              borderColor: 'var(--accent-amber)',
+              color: 'var(--ink-primary)',
+            }}
+          >
+            <ShieldCheck
+              size={15}
+              strokeWidth={2.3}
+              aria-hidden="true"
+              className="mt-0.5 shrink-0"
+              style={{ color: 'var(--accent-amber-ink)' }}
+            />
+            <span>
+              <strong style={{ color: 'var(--accent-amber-ink)' }}>Organizer Override:</strong>{' '}
+              You can edit {team.name}&apos;s settings and 10-Round schedule regardless of Team
+              membership.
+            </span>
+          </div>
+        )}
 
         {/* Read-only notice for non-teammates */}
         {!canEditSchedule && (

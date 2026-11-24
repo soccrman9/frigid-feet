@@ -1,6 +1,7 @@
 import { useState, type FormEvent, type ReactNode } from 'react';
 import {
   CalendarCog,
+  Download,
   KeyRound,
   Lock,
   Megaphone,
@@ -12,9 +13,16 @@ import { useEventData } from '../../state/EventDataContext';
 import { OrganizerAnnouncementsEditor } from './OrganizerAnnouncementsEditor';
 import { OrganizerCoursesEditor } from './OrganizerCoursesEditor';
 import { OrganizerEventEditor } from './OrganizerEventEditor';
+import { OrganizerExportSection } from './OrganizerExportSection';
 import { OrganizerSecretsSection } from './OrganizerSecretsSection';
 
-export type OrganizerSectionId = 'event' | 'courses' | 'announcements' | 'secrets' | string;
+export type OrganizerSectionId =
+  | 'event'
+  | 'courses'
+  | 'announcements'
+  | 'secrets'
+  | 'export'
+  | string;
 
 export interface OrganizerTabExtension {
   id: string;
@@ -30,6 +38,7 @@ interface OrganizerModePanelProps {
   renderCoursesEditor?: () => ReactNode;
   renderAnnouncementsEditor?: () => ReactNode;
   renderSecretsSection?: () => ReactNode;
+  renderExportSection?: () => ReactNode;
 }
 
 export function OrganizerModePanel({
@@ -38,6 +47,7 @@ export function OrganizerModePanel({
   renderCoursesEditor,
   renderAnnouncementsEditor,
   renderSecretsSection,
+  renderExportSection,
 }: OrganizerModePanelProps) {
   const { isOrganizer, isOnline, unlockOrganizer, lockOrganizer } = useEventData();
   const [promptOpen, setPromptOpen] = useState(false);
@@ -224,6 +234,7 @@ export function OrganizerModePanel({
     { id: 'courses', label: 'Courses', icon: <Route size={15} strokeWidth={2.25} aria-hidden="true" /> },
     { id: 'announcements', label: 'Announcements', icon: <Megaphone size={15} strokeWidth={2.25} aria-hidden="true" /> },
     { id: 'secrets', label: 'Access & QR', icon: <KeyRound size={15} strokeWidth={2.25} aria-hidden="true" /> },
+    { id: 'export', label: 'Export', icon: <Download size={15} strokeWidth={2.25} aria-hidden="true" /> },
   ];
 
   const allTabs = [
@@ -320,6 +331,8 @@ export function OrganizerModePanel({
           (renderAnnouncementsEditor ? renderAnnouncementsEditor() : <OrganizerAnnouncementsEditor />)}
         {activeTab === 'secrets' &&
           (renderSecretsSection ? renderSecretsSection() : <OrganizerSecretsSection />)}
+        {activeTab === 'export' &&
+          (renderExportSection ? renderExportSection() : <OrganizerExportSection />)}
         {activeExtension && activeExtension.render()}
       </div>
     </section>
