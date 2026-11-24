@@ -66,20 +66,19 @@ export function EventRoutePage({ eventApi }: { eventApi: EventApi }) {
 
   const loadUnlockedEvent = useCallback(
     async (eventId: string): Promise<UnlockedState> => {
-      const [snapshot, grants, pendingQueue] = await Promise.all([
+      const [snapshot, grants] = await Promise.all([
         eventApi.getEventSnapshot(eventId),
         eventApi.getSessionGrants(eventId),
-        getQueuedLegMutations(eventId).catch(() => [] as QueuedLegMutation[]),
       ]);
       const lastSyncedAt = new Date().toISOString();
-      await saveEventSnapshot(snapshot, lastSyncedAt).catch(() => undefined);
+      void saveEventSnapshot(snapshot, lastSyncedAt).catch(() => undefined);
       return {
         eventId,
         snapshot,
         grants,
         lastSyncedAt,
         isOfflineSnapshot: false,
-        pendingQueue,
+        pendingQueue: [],
       };
     },
     [eventApi],
