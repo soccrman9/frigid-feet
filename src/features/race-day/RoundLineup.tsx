@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { Check, Clock, ExternalLink, Pencil, Play } from 'lucide-react';
-import type { Course, Leg, Participant, Round, Team } from '../../types/domain';
+import type { Course, Leg, LegStatus, Participant, Round, Team } from '../../types/domain';
 import { toSafeHttpsUrl } from '../home/urlSafety';
 import {
   canActOnLeg,
@@ -26,7 +26,7 @@ export interface RoundLineupProps {
   headerAction?: ReactNode;
   onStartLeg: (leg: Leg) => void;
   onFinishLeg: (leg: Leg) => void;
-  onEditLeg: (leg: Leg) => void;
+  onEditLeg: (leg: Leg, initialStatus?: LegStatus) => void;
 }
 
 const STATUS_SORT_ORDER: Record<Leg['status'], number> = {
@@ -350,7 +350,7 @@ export function RoundLineup({
                       </span>
                       <button
                         type="button"
-                        onClick={() => onEditLeg(leg)}
+                        onClick={() => onEditLeg(leg, 'completed')}
                         className="pfl-focus-ring min-h-[44px] cursor-pointer rounded-md border px-3 text-xs font-bold"
                         style={{
                           backgroundColor: 'var(--bg-surface)',

@@ -758,11 +758,15 @@ export class InMemoryEventApi implements EventApi {
     startedAt: string = new Date().toISOString(),
   ): Promise<number> {
     this.requireGrant(eventId, ['organizer']);
+    if (!Number.isInteger(roundNumber) || roundNumber < 1 || roundNumber > 10) {
+      throw new EventAccessError('VALIDATION_ERROR', 'Round number must be between 1 and 10.');
+    }
+    const effectiveStartedAt = startedAt || new Date().toISOString();
     const excluded = new Set(excludeLegIds);
 
     for (const round of this.store.rounds.values()) {
       if (round.eventId === eventId && round.roundNumber === roundNumber) {
-        round.startedAt = startedAt;
+        round.startedAt = effectiveStartedAt;
       }
     }
 
@@ -776,8 +780,8 @@ export class InMemoryEventApi implements EventApi {
         !excluded.has(leg.id)
       ) {
         leg.status = 'out_on_course';
-        leg.startedAt = startedAt;
-        leg.clientUpdatedAt = startedAt;
+        leg.startedAt = effectiveStartedAt;
+        leg.clientUpdatedAt = effectiveStartedAt;
         leg.updatedByOrganizer = true;
         startedCount += 1;
       }

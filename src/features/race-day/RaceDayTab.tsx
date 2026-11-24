@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Award, ArrowLeft, Medal, Timer } from 'lucide-react';
-import type { Leg } from '../../types/domain';
+import type { Leg, LegStatus } from '../../types/domain';
 import { useEventData, type LegMutationActionType } from '../../state/EventDataContext';
 import { LegEditorDialog, type LegEditorSavePayload } from './LegEditorDialog';
 import {
@@ -17,6 +17,7 @@ import {
 } from './raceDayUtils';
 import { RoundLineup } from './RoundLineup';
 import { RoundPillRail } from './RoundPillRail';
+import { StartRoundSheet } from './StartRoundSheet';
 import { TeamProgressList } from './TeamProgressList';
 import { ThumbActionDock } from './ThumbActionDock';
 
@@ -46,11 +47,14 @@ export function RaceDayTab({
   onOpenEventRecap,
 }: RaceDayTabProps = {}) {
   const {
+    eventApi,
     eventId,
     snapshot,
     isOrganizer,
+    isOnline,
     activeParticipant,
     setHeaderRoundSlot,
+    refreshSnapshot,
     submitLegMutation,
   } = useEventData();
 
@@ -67,6 +71,10 @@ export function RaceDayTab({
     getActiveRoundNumber(snapshot.rounds, snapshot.legs, Date.now()),
   );
   const [editingLegId, setEditingLegId] = useState<string | null>(null);
+  const [editingLegInitialStatus, setEditingLegInitialStatus] = useState<LegStatus | undefined>(
+    undefined,
+  );
+  const [startRoundOpen, setStartRoundOpen] = useState(false);
   const [busyLegId, setBusyLegId] = useState<string | null>(null);
   const [undoToast, setUndoToast] = useState<UndoToastState | null>(null);
   const [milestoneToast, setMilestoneToast] = useState<MilestoneToastState | null>(null);
@@ -297,6 +305,7 @@ export function RaceDayTab({
         isExplicitRevert: payload.isExplicitRevert,
       });
       setEditingLegId(null);
+      setEditingLegInitialStatus(undefined);
     },
     [runLegMutation],
   );
@@ -330,6 +339,27 @@ export function RaceDayTab({
       }
     },
     [eventId, submitLegMutation],
+  );
+
+  const handleStartRound = useCallback(
+    async (roundNumber: number, excludeLegIds: string[], startedAt: string): Promise<number> => {
+      const startedCount = await eventApi.startRound(
+        eventId,
+        roundNumber,
+        excludeLegIds,
+        startedAt,
+      );
+      await refreshSnapshot();
+      // Mass-start has no bulk-undo; accidental single-Runner starts are reverted individually
+      setUndoToast(null);
+      setStatusNotice(
+        startedCount > 0
+          ? `Started Round ${roundNumber} for ${startedCount} ${startedCount === 1 ? 'Runner' : 'Runners'}`
+          : `Recorded Round ${roundNumber} start`,
+      );
+      return startedCount;
+    },
+    [eventApi, eventId, refreshSnapshot],
   );
 
   const handleDismissUndo = useCallback(() => setUndoToast(null), []);
@@ -467,10 +497,30 @@ export function RaceDayTab({
                 isOrganizer={isOrganizer}
                 nowMs={nowMs}
                 busyLegId={busyLegId}
-                headerAction={renderRoundHeaderAction?.(selectedRoundNumber)}
+                headerAction={
+                  renderRoundHeaderAction ? (
+                    renderRoundHeaderAction(selectedRoundNumber)
+                  ) : isOrganizer ? (
+                    <StartRoundSheet
+                      roundNumber={selectedRoundNumber}
+                      round={selectedRound}
+                      legs={snapshot.legs}
+                      participants={snapshot.participants}
+                      teams={snapshot.teams}
+                      courses={snapshot.courses}
+                      timezone={snapshot.event.timezone}
+                      isOnline={isOnline}
+                      onOpenChange={setStartRoundOpen}
+                      onStartRound={handleStartRound}
+                    />
+                  ) : undefined
+                }
                 onStartLeg={handleStartLeg}
                 onFinishLeg={handleFinishLeg}
-                onEditLeg={(leg) => setEditingLegId(leg.id)}
+                onEditLeg={(leg, initialStatus) => {
+                  setEditingLegInitialStatus(initialStatus);
+                  setEditingLegId(leg.id);
+                }}
               />
 
               <TeamProgressList teams={snapshot.teams} legs={snapshot.legs} />
@@ -542,7 +592,7 @@ export function RaceDayTab({
         milestoneToast={milestoneToast}
         statusNotice={statusNotice}
         hasThumbDock={showDock}
-        modalOpen={editingLeg !== null}
+        modalOpen={editingLeg !== null || startRoundOpen}
         undoing={undoing}
         onUndo={(toast) => void handleUndo(toast)}
         onDismissUndo={handleDismissUndo}
@@ -553,6 +603,7 @@ export function RaceDayTab({
       {/* Native <dialog> Leg Editor (Course, watch time / blank, https:// activity link, Mark Completed / Revert) */}
       <LegEditorDialog
         leg={editingLeg}
+        initialStatus={editingLegInitialStatus}
         runner={
           editingLeg?.runnerId
             ? (snapshot.participants.find((p) => p.id === editingLeg.runnerId) ?? null)
@@ -566,7 +617,10 @@ export function RaceDayTab({
         courses={snapshot.courses}
         nowMs={nowMs}
         saving={editingLeg !== null && busyLegId === editingLeg.id}
-        onClose={() => setEditingLegId(null)}
+        onClose={() => {
+          setEditingLegId(null);
+          setEditingLegInitialStatus(undefined);
+        }}
         onSave={handleSaveEditedLeg}
       />
     </div>
