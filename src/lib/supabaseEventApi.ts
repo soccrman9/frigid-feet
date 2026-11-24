@@ -25,6 +25,16 @@ import {
 } from '../types/domain';
 import type { EventApi, Unsubscribe } from './eventApi';
 import { createSeededInMemoryEventApi } from './inMemoryEventApi';
+import {
+  REALTIME_TABLES,
+  type RealtimeChangeEvent,
+  type RealtimeConnectionStatus,
+  type RealtimeEventType,
+  type RealtimeOldRow,
+  type RealtimeSubscriptionHandlers,
+  type RealtimeTable,
+  type RealtimeTableRowMap,
+} from '../features/realtime/realtimeTypes';
 
 type Row = Record<string, unknown>;
 
@@ -222,30 +232,120 @@ function handleSupabaseError(error: { code?: string; message?: string } | null):
   throw new EventAccessError('VALIDATION_ERROR', message);
 }
 
-const REALTIME_TABLES = [
-  'legs',
-  'rounds',
-  'teams',
-  'participants',
-  'announcements',
-  'badge_awards',
-  'badge_definitions',
-  'supply_items',
-  'supply_claims',
-  'events',
-  'courses',
-] as const;
+function hasValidRowId(row: unknown): row is Row & { id: string } {
+  if (!row || typeof row !== 'object' || !('id' in row)) {
+    return false;
+  }
+  const id = (row as Row).id;
+  return typeof id === 'string' && id.length > 0;
+}
+
+function mapRowForTable<T extends RealtimeTable>(table: T, row: Row): RealtimeTableRowMap[T] {
+  switch (table) {
+    case 'events':
+      return mapEvent(row) as RealtimeTableRowMap[T];
+    case 'courses':
+      return mapCourse(row) as RealtimeTableRowMap[T];
+    case 'announcements':
+      return mapAnnouncement(row) as RealtimeTableRowMap[T];
+    case 'rounds':
+      return mapRound(row) as RealtimeTableRowMap[T];
+    case 'teams':
+      return mapTeam(row) as RealtimeTableRowMap[T];
+    case 'participants':
+      return mapParticipant(row) as RealtimeTableRowMap[T];
+    case 'legs':
+      return mapLeg(row) as RealtimeTableRowMap[T];
+    case 'supply_items':
+      return mapSupplyItem(row) as RealtimeTableRowMap[T];
+    case 'supply_claims':
+      return mapSupplyClaim(row) as RealtimeTableRowMap[T];
+    case 'badge_definitions':
+      return mapBadgeDefinition(row) as RealtimeTableRowMap[T];
+    case 'badge_awards':
+      return mapBadgeAward(row) as RealtimeTableRowMap[T];
+  }
+}
+
+function mapOldRowForTable<T extends RealtimeTable>(
+  table: T,
+  row: unknown,
+): RealtimeOldRow<T> | null {
+  if (!hasValidRowId(row)) return null;
+  const keys = Object.keys(row);
+  if (keys.length <= 1) {
+    return { id: String(row.id) } as RealtimeOldRow<T>;
+  }
+  if (keys.length === 2 && 'event_id' in row && typeof row.event_id === 'string') {
+    return { id: String(row.id), eventId: row.event_id } as unknown as RealtimeOldRow<T>;
+  }
+  return mapRowForTable(table, row) as RealtimeOldRow<T>;
+}
+
+export function mapPostgresPayloadToRealtimeChange<T extends RealtimeTable>(
+  table: T,
+  payload: {
+    eventType: string;
+    new?: Record<string, unknown> | null;
+    old?: Record<string, unknown> | null;
+  },
+): RealtimeChangeEvent | null {
+  const eventType = payload.eventType as RealtimeEventType;
+  if (eventType !== 'INSERT' && eventType !== 'UPDATE' && eventType !== 'DELETE') {
+    return null;
+  }
+
+  if (eventType === 'DELETE') {
+    const oldRow = mapOldRowForTable(table, payload.old);
+    if (!oldRow) return null;
+    return {
+      table,
+      eventType: 'DELETE',
+      newRow: null,
+      oldRow,
+    } as RealtimeChangeEvent;
+  }
+
+  if (!hasValidRowId(payload.new)) {
+    return null;
+  }
+
+  return {
+    table,
+    eventType,
+    newRow: mapRowForTable(table, payload.new),
+    oldRow: mapOldRowForTable(table, payload.old),
+  } as RealtimeChangeEvent;
+}
+
+function mapChannelStatus(status: string): RealtimeConnectionStatus | null {
+  switch (status) {
+    case 'SUBSCRIBED':
+      return 'connected';
+    case 'TIMED_OUT':
+    case 'CHANNEL_ERROR':
+      return 'reconnecting';
+    case 'CLOSED':
+      return 'disconnected';
+    default:
+      return null;
+  }
+}
 
 export class SupabaseEventApi implements EventApi {
   readonly client: SupabaseClient;
 
-  constructor(url: string, anonKey: string) {
-    this.client = createClient(url, anonKey, {
-      auth: {
-        persistSession: true,
-        autoRefreshToken: true,
-      },
-    });
+  constructor(urlOrClient: string | SupabaseClient, anonKey?: string) {
+    if (typeof urlOrClient === 'string') {
+      this.client = createClient(urlOrClient, anonKey ?? '', {
+        auth: {
+          persistSession: true,
+          autoRefreshToken: true,
+        },
+      });
+    } else {
+      this.client = urlOrClient;
+    }
   }
 
   async ensureSession(): Promise<string> {
@@ -977,20 +1077,41 @@ export class SupabaseEventApi implements EventApi {
     if (error) handleSupabaseError(error);
   }
 
-  subscribeToEvent(eventId: string, onChange: () => void): Unsubscribe {
+  subscribeToEvent(eventId: string, handlers: RealtimeSubscriptionHandlers): Unsubscribe {
+    let unsubscribed = false;
+    handlers.onStatusChange?.('connecting');
+
     const channel = this.client.channel(`event:${eventId}`);
     for (const table of REALTIME_TABLES) {
       const filter = table === 'events' ? `id=eq.${eventId}` : `event_id=eq.${eventId}`;
       channel.on(
         'postgres_changes',
         { event: '*', schema: 'public', table, filter },
-        () => {
-          onChange();
+        (payload) => {
+          if (unsubscribed) return;
+          const change = mapPostgresPayloadToRealtimeChange(table, {
+            eventType: payload.eventType,
+            new: payload.new as Record<string, unknown> | null,
+            old: payload.old as Record<string, unknown> | null,
+          });
+          if (change) {
+            handlers.onChange(change);
+          }
         },
       );
     }
-    channel.subscribe();
+
+    channel.subscribe((status) => {
+      if (unsubscribed) return;
+      const mapped = mapChannelStatus(status);
+      if (mapped) {
+        handlers.onStatusChange?.(mapped);
+      }
+    });
+
     return () => {
+      if (unsubscribed) return;
+      unsubscribed = true;
       void this.client.removeChannel(channel);
     };
   }

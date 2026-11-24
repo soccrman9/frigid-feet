@@ -23,6 +23,12 @@ import {
   getSavedParticipantId,
   saveParticipantId,
 } from '../features/participant/participantStorage';
+import { applyRealtimeChangeToSnapshot, dedupeSnapshot } from '../features/realtime/realtimeMerge';
+import type {
+  RealtimeChangeEvent,
+  RealtimeConnectionStatus,
+} from '../features/realtime/realtimeTypes';
+import { useEventRealtime } from '../features/realtime/useEventRealtime';
 
 export type LegMutationActionType = 'start' | 'finish' | 'mark_completed' | 'edit' | 'revert';
 
@@ -51,6 +57,7 @@ export interface EventDataContextValue {
   unlockOrganizer: (passcode: string) => Promise<boolean>;
   lockOrganizer: () => void;
   isOnline: boolean;
+  realtimeStatus: RealtimeConnectionStatus;
   refreshing: boolean;
   lastSyncedAt: string | null;
   activeParticipantId: string | null;
@@ -75,6 +82,8 @@ interface EventDataProviderProps {
   initialSnapshot: EventSnapshot;
   initialGrants: GrantScope[];
   legMutationHandler?: LegMutationHandler;
+  pauseRealtimeOnBackground?: boolean;
+  realtimeBackgroundTimeoutMs?: number;
   children: ReactNode;
 }
 
@@ -84,9 +93,17 @@ export function EventDataProvider({
   initialSnapshot,
   initialGrants,
   legMutationHandler,
+  pauseRealtimeOnBackground = true,
+  realtimeBackgroundTimeoutMs,
   children,
 }: EventDataProviderProps) {
-  const [snapshot, setSnapshot] = useState<EventSnapshot>(initialSnapshot);
+  const [snapshot, setSnapshotRaw] = useState<EventSnapshot>(initialSnapshot);
+  const setSnapshot = useCallback<Dispatch<SetStateAction<EventSnapshot>>>((updater) => {
+    setSnapshotRaw((prev) => {
+      const next = typeof updater === 'function' ? updater(prev) : updater;
+      return dedupeSnapshot(next);
+    });
+  }, []);
   const [grants, setGrants] = useState<GrantScope[]>(initialGrants);
   const [organizerUiLocked, setOrganizerUiLocked] = useState(false);
   const [activeParticipantId, setActiveParticipantId] = useState<string | null>(() =>
@@ -166,6 +183,20 @@ export function EventDataProvider({
     }
   }, [eventApi, eventId]);
 
+  const handleRealtimeChange = useCallback((change: RealtimeChangeEvent) => {
+    setSnapshot((prev) => applyRealtimeChangeToSnapshot(prev, change));
+    setLastSyncedAt(new Date().toISOString());
+  }, []);
+
+  const { status: realtimeStatus } = useEventRealtime({
+    eventApi,
+    eventId,
+    pauseOnBackground: pauseRealtimeOnBackground,
+    backgroundTimeoutMs: realtimeBackgroundTimeoutMs,
+    onChange: handleRealtimeChange,
+    onResync: refreshSnapshot,
+  });
+
   const refreshGrants = useCallback(async () => {
     const nextGrants = await eventApi.getSessionGrants(eventId);
     setGrants(nextGrants);
@@ -217,6 +248,7 @@ export function EventDataProvider({
       unlockOrganizer,
       lockOrganizer,
       isOnline,
+      realtimeStatus,
       refreshing,
       lastSyncedAt,
       activeParticipantId: activeParticipant ? activeParticipant.id : null,
@@ -241,6 +273,7 @@ export function EventDataProvider({
       unlockOrganizer,
       lockOrganizer,
       isOnline,
+      realtimeStatus,
       refreshing,
       lastSyncedAt,
       activeParticipant,
