@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Backpack, Flag, Home, Users } from 'lucide-react';
+import { Backpack, Flag, Home, RefreshCw, Users, WifiOff } from 'lucide-react';
 import { useEventData } from '../state/EventDataContext';
 import { HomeTab } from '../features/home/HomeTab';
 import { TeamsTab } from '../features/teams/TeamsTab';
@@ -38,7 +38,7 @@ function formatLiveClock(date: Date, timezone?: string | null): string {
 }
 
 export function AppShell({ initialTab = 'home' }: { initialTab?: ShellTabId }) {
-  const { snapshot, headerRoundSlot, headerStatusSlot } = useEventData();
+  const { snapshot, realtimeStatus, headerRoundSlot, headerStatusSlot } = useEventData();
   const [activeTab, setActiveTab] = useState<ShellTabId>(initialTab);
   const [now, setNow] = useState<Date>(() => new Date());
 
@@ -74,6 +74,31 @@ export function AppShell({ initialTab = 'home' }: { initialTab?: ShellTabId }) {
 
         <div className="flex shrink-0 items-center gap-1">
           {headerStatusSlot}
+          {(realtimeStatus === 'reconnecting' || realtimeStatus === 'disconnected') && (
+            <span
+              data-testid="realtime-status-pill"
+              role="status"
+              aria-live="polite"
+              className="inline-flex items-center gap-1 rounded border px-2 py-0.5 text-xs font-semibold whitespace-nowrap"
+              style={{
+                backgroundColor: 'var(--shell-dock)',
+                borderColor: 'var(--border-strong)',
+                color: 'var(--ink-on-shell-muted)',
+              }}
+            >
+              {realtimeStatus === 'reconnecting' ? (
+                <>
+                  <RefreshCw size={12} aria-hidden="true" />
+                  <span>Reconnecting…</span>
+                </>
+              ) : (
+                <>
+                  <WifiOff size={12} aria-hidden="true" />
+                  <span>Live paused</span>
+                </>
+              )}
+            </span>
+          )}
           <time
             data-testid="live-clock"
             dateTime={now.toISOString()}

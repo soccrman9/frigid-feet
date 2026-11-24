@@ -23,6 +23,11 @@ import {
 } from '../types/domain';
 import type { EventApi, Unsubscribe } from './eventApi';
 import { toSafeHttpsUrl } from '../features/home/urlSafety';
+import type {
+  RealtimeChangeEvent,
+  RealtimeConnectionStatus,
+  RealtimeSubscriptionHandlers,
+} from '../features/realtime/realtimeTypes';
 
 interface StoredSecrets {
   eventId: string;
@@ -65,25 +70,41 @@ export class InMemoryEventStore {
   readonly chipIns = new Map<string, ChipIn>();
   readonly badgeDefinitions = new Map<string, BadgeDefinition>();
   readonly badgeAwards = new Map<string, BadgeAward>();
-  private readonly listeners = new Map<string, Set<() => void>>();
+  private readonly listeners = new Map<string, Set<RealtimeSubscriptionHandlers>>();
 
-  notify(eventId: string): void {
+  emitRealtimeChange(eventId: string, change: RealtimeChangeEvent): void {
     const subs = this.listeners.get(eventId);
     if (!subs) return;
-    for (const fn of subs) {
-      fn();
+    for (const handler of Array.from(subs)) {
+      handler.onChange(change);
     }
   }
 
-  subscribe(eventId: string, onChange: () => void): Unsubscribe {
+  simulateRealtimeStatus(eventId: string, status: RealtimeConnectionStatus): void {
+    const subs = this.listeners.get(eventId);
+    if (!subs) return;
+    for (const handler of Array.from(subs)) {
+      handler.onStatusChange?.(status);
+    }
+  }
+
+  getActiveSubscriptionCount(eventId: string): number {
+    return this.listeners.get(eventId)?.size ?? 0;
+  }
+
+  subscribe(eventId: string, handlers: RealtimeSubscriptionHandlers): Unsubscribe {
     let subs = this.listeners.get(eventId);
     if (!subs) {
       subs = new Set();
       this.listeners.set(eventId, subs);
     }
-    subs.add(onChange);
+    subs.add(handlers);
+    handlers.onStatusChange?.('connected');
     return () => {
-      subs?.delete(onChange);
+      subs?.delete(handlers);
+      if (subs && subs.size === 0) {
+        this.listeners.delete(eventId);
+      }
     };
   }
 
@@ -251,7 +272,7 @@ export class InMemoryEventStore {
     }
   }
 
-  seedTeamLegs(eventId: string, teamId: string): void {
+  seedTeamLegs(eventId: string, teamId: string): Leg[] {
     const primaryCourse =
       Array.from(this.courses.values())
         .filter((c) => c.eventId === eventId)
@@ -259,9 +280,10 @@ export class InMemoryEventStore {
       null;
 
     const now = new Date().toISOString();
+    const created: Leg[] = [];
     for (let roundNumber = 1; roundNumber <= 10; roundNumber += 1) {
       const id = generateId();
-      this.legs.set(id, {
+      const leg: Leg = {
         id,
         eventId,
         teamId,
@@ -276,8 +298,11 @@ export class InMemoryEventStore {
         clientUpdatedAt: now,
         lastMutationId: null,
         updatedByOrganizer: false,
-      });
+      };
+      this.legs.set(id, leg);
+      created.push({ ...leg });
     }
+    return created;
   }
 }
 
@@ -467,7 +492,12 @@ export class InMemoryEventApi implements EventApi {
     if (!existing) throw new EventAccessError('NOT_FOUND', 'Event not found.');
     const updated: EventRecord = { ...existing, ...patch };
     this.store.events.set(eventId, updated);
-    this.store.notify(eventId);
+    this.store.emitRealtimeChange(eventId, {
+      table: 'events',
+      eventType: 'UPDATE',
+      newRow: { ...updated, chipInBreakdown: [...updated.chipInBreakdown] },
+      oldRow: { ...existing, chipInBreakdown: [...existing.chipInBreakdown] },
+    });
     return { ...updated };
   }
 
@@ -478,21 +508,42 @@ export class InMemoryEventApi implements EventApi {
     this.requireGrant(eventId, ['organizer']);
     validateHttpsUrl(course.externalRouteUrl, 'externalRouteUrl');
     const id = course.id ?? generateId();
+    const existing = this.store.courses.get(id) ?? null;
     const record: Course = { ...course, id, eventId };
     this.store.courses.set(id, record);
-    this.store.notify(eventId);
+    this.store.emitRealtimeChange(eventId, {
+      table: 'courses',
+      eventType: existing ? 'UPDATE' : 'INSERT',
+      newRow: { ...record },
+      oldRow: existing ? { ...existing } : null,
+    });
     return { ...record };
   }
 
   async deleteCourse(eventId: string, courseId: string): Promise<void> {
     this.requireGrant(eventId, ['organizer']);
+    const existing = this.store.courses.get(courseId);
     this.store.courses.delete(courseId);
+    if (existing) {
+      this.store.emitRealtimeChange(eventId, {
+        table: 'courses',
+        eventType: 'DELETE',
+        newRow: null,
+        oldRow: { ...existing },
+      });
+    }
     for (const leg of this.store.legs.values()) {
       if (leg.eventId === eventId && leg.courseId === courseId) {
+        const oldLeg = { ...leg };
         leg.courseId = null;
+        this.store.emitRealtimeChange(eventId, {
+          table: 'legs',
+          eventType: 'UPDATE',
+          newRow: { ...leg },
+          oldRow: oldLeg,
+        });
       }
     }
-    this.store.notify(eventId);
   }
 
   async createAnnouncement(
@@ -507,7 +558,12 @@ export class InMemoryEventApi implements EventApi {
       createdAt: new Date().toISOString(),
     };
     this.store.announcements.set(record.id, record);
-    this.store.notify(eventId);
+    this.store.emitRealtimeChange(eventId, {
+      table: 'announcements',
+      eventType: 'INSERT',
+      newRow: { ...record },
+      oldRow: null,
+    });
     return { ...record };
   }
 
@@ -523,14 +579,27 @@ export class InMemoryEventApi implements EventApi {
     }
     const updated = { ...existing, ...patch };
     this.store.announcements.set(announcementId, updated);
-    this.store.notify(eventId);
+    this.store.emitRealtimeChange(eventId, {
+      table: 'announcements',
+      eventType: 'UPDATE',
+      newRow: { ...updated },
+      oldRow: { ...existing },
+    });
     return { ...updated };
   }
 
   async deleteAnnouncement(eventId: string, announcementId: string): Promise<void> {
     this.requireGrant(eventId, ['organizer']);
+    const existing = this.store.announcements.get(announcementId);
     this.store.announcements.delete(announcementId);
-    this.store.notify(eventId);
+    if (existing) {
+      this.store.emitRealtimeChange(eventId, {
+        table: 'announcements',
+        eventType: 'DELETE',
+        newRow: null,
+        oldRow: { ...existing },
+      });
+    }
   }
 
   async createParticipant(
@@ -552,7 +621,12 @@ export class InMemoryEventApi implements EventApi {
       createdAt: new Date().toISOString(),
     };
     this.store.participants.set(record.id, record);
-    this.store.notify(eventId);
+    this.store.emitRealtimeChange(eventId, {
+      table: 'participants',
+      eventType: 'INSERT',
+      newRow: { ...record },
+      oldRow: null,
+    });
     return { ...record };
   }
 
@@ -575,14 +649,27 @@ export class InMemoryEventApi implements EventApi {
       throw new EventAccessError('VALIDATION_ERROR', 'Invalid Round attendance window.');
     }
     this.store.participants.set(participantId, updated);
-    this.store.notify(eventId);
+    this.store.emitRealtimeChange(eventId, {
+      table: 'participants',
+      eventType: 'UPDATE',
+      newRow: { ...updated },
+      oldRow: { ...existing },
+    });
     return { ...updated };
   }
 
   async deleteParticipant(eventId: string, participantId: string): Promise<void> {
     this.requireGrant(eventId, ['participant', 'organizer']);
+    const existing = this.store.participants.get(participantId);
     this.store.participants.delete(participantId);
-    this.store.notify(eventId);
+    if (existing) {
+      this.store.emitRealtimeChange(eventId, {
+        table: 'participants',
+        eventType: 'DELETE',
+        newRow: null,
+        oldRow: { ...existing },
+      });
+    }
   }
 
   async createTeam(
@@ -597,8 +684,21 @@ export class InMemoryEventApi implements EventApi {
       createdAt: new Date().toISOString(),
     };
     this.store.teams.set(record.id, record);
-    this.store.seedTeamLegs(eventId, record.id);
-    this.store.notify(eventId);
+    const seededLegs = this.store.seedTeamLegs(eventId, record.id);
+    this.store.emitRealtimeChange(eventId, {
+      table: 'teams',
+      eventType: 'INSERT',
+      newRow: { ...record },
+      oldRow: null,
+    });
+    for (const leg of seededLegs) {
+      this.store.emitRealtimeChange(eventId, {
+        table: 'legs',
+        eventType: 'INSERT',
+        newRow: { ...leg },
+        oldRow: null,
+      });
+    }
     return { ...record };
   }
 
@@ -614,20 +714,50 @@ export class InMemoryEventApi implements EventApi {
     }
     const updated = { ...existing, ...patch };
     this.store.teams.set(teamId, updated);
-    this.store.notify(eventId);
+    this.store.emitRealtimeChange(eventId, {
+      table: 'teams',
+      eventType: 'UPDATE',
+      newRow: { ...updated },
+      oldRow: { ...existing },
+    });
     return { ...updated };
   }
 
   async deleteTeam(eventId: string, teamId: string): Promise<void> {
     this.requireGrant(eventId, ['participant', 'organizer']);
+    const existingTeam = this.store.teams.get(teamId);
     this.store.teams.delete(teamId);
-    for (const [legId, leg] of this.store.legs.entries()) {
-      if (leg.teamId === teamId) this.store.legs.delete(legId);
+    if (existingTeam) {
+      this.store.emitRealtimeChange(eventId, {
+        table: 'teams',
+        eventType: 'DELETE',
+        newRow: null,
+        oldRow: { ...existingTeam },
+      });
+    }
+    for (const [legId, leg] of Array.from(this.store.legs.entries())) {
+      if (leg.teamId === teamId) {
+        this.store.legs.delete(legId);
+        this.store.emitRealtimeChange(eventId, {
+          table: 'legs',
+          eventType: 'DELETE',
+          newRow: null,
+          oldRow: { ...leg },
+        });
+      }
     }
     for (const participant of this.store.participants.values()) {
-      if (participant.teamId === teamId) participant.teamId = null;
+      if (participant.teamId === teamId) {
+        const oldParticipant = { ...participant };
+        participant.teamId = null;
+        this.store.emitRealtimeChange(eventId, {
+          table: 'participants',
+          eventType: 'UPDATE',
+          newRow: { ...participant },
+          oldRow: oldParticipant,
+        });
+      }
     }
-    this.store.notify(eventId);
   }
 
   async leaveTeam(participantId: string): Promise<void> {
@@ -639,7 +769,14 @@ export class InMemoryEventApi implements EventApi {
     const oldTeamId = participant.teamId;
     if (!oldTeamId) return;
 
+    const oldParticipant = { ...participant };
     participant.teamId = null;
+    this.store.emitRealtimeChange(participant.eventId, {
+      table: 'participants',
+      eventType: 'UPDATE',
+      newRow: { ...participant },
+      oldRow: oldParticipant,
+    });
 
     for (const leg of this.store.legs.values()) {
       if (
@@ -647,7 +784,14 @@ export class InMemoryEventApi implements EventApi {
         leg.runnerId === participantId &&
         leg.status === 'scheduled'
       ) {
+        const oldLeg = { ...leg };
         leg.runnerId = null;
+        this.store.emitRealtimeChange(participant.eventId, {
+          table: 'legs',
+          eventType: 'UPDATE',
+          newRow: { ...leg },
+          oldRow: oldLeg,
+        });
       }
     }
 
@@ -659,15 +803,28 @@ export class InMemoryEventApi implements EventApi {
     ).length;
 
     if (remainingParticipants === 0 && completedLegs === 0) {
+      const removedTeam = this.store.teams.get(oldTeamId);
       this.store.teams.delete(oldTeamId);
-      for (const [legId, leg] of this.store.legs.entries()) {
+      if (removedTeam) {
+        this.store.emitRealtimeChange(participant.eventId, {
+          table: 'teams',
+          eventType: 'DELETE',
+          newRow: null,
+          oldRow: { ...removedTeam },
+        });
+      }
+      for (const [legId, leg] of Array.from(this.store.legs.entries())) {
         if (leg.teamId === oldTeamId) {
           this.store.legs.delete(legId);
+          this.store.emitRealtimeChange(participant.eventId, {
+            table: 'legs',
+            eventType: 'DELETE',
+            newRow: null,
+            oldRow: { ...leg },
+          });
         }
       }
     }
-
-    this.store.notify(participant.eventId);
   }
 
   async updateLeg(
@@ -686,7 +843,12 @@ export class InMemoryEventApi implements EventApi {
     }
     const updated: Leg = { ...existing, ...patch };
     this.store.legs.set(legId, updated);
-    this.store.notify(eventId);
+    this.store.emitRealtimeChange(eventId, {
+      table: 'legs',
+      eventType: 'UPDATE',
+      newRow: { ...updated },
+      oldRow: { ...existing },
+    });
     return { ...updated };
   }
 
@@ -745,7 +907,12 @@ export class InMemoryEventApi implements EventApi {
     };
 
     this.store.legs.set(updated.id, updated);
-    this.store.notify(input.eventId);
+    this.store.emitRealtimeChange(input.eventId, {
+      table: 'legs',
+      eventType: 'UPDATE',
+      newRow: { ...updated },
+      oldRow: { ...current },
+    });
     return { applied: true, reason: 'applied', leg: { ...updated } };
   }
 
@@ -760,7 +927,14 @@ export class InMemoryEventApi implements EventApi {
 
     for (const round of this.store.rounds.values()) {
       if (round.eventId === eventId && round.roundNumber === roundNumber) {
+        const oldRound = { ...round };
         round.startedAt = startedAt;
+        this.store.emitRealtimeChange(eventId, {
+          table: 'rounds',
+          eventType: 'UPDATE',
+          newRow: { ...round },
+          oldRow: oldRound,
+        });
       }
     }
 
@@ -773,15 +947,21 @@ export class InMemoryEventApi implements EventApi {
         leg.runnerId !== null &&
         !excluded.has(leg.id)
       ) {
+        const oldLeg = { ...leg };
         leg.status = 'out_on_course';
         leg.startedAt = startedAt;
         leg.clientUpdatedAt = startedAt;
         leg.updatedByOrganizer = true;
         startedCount += 1;
+        this.store.emitRealtimeChange(eventId, {
+          table: 'legs',
+          eventType: 'UPDATE',
+          newRow: { ...leg },
+          oldRow: oldLeg,
+        });
       }
     }
 
-    this.store.notify(eventId);
     return startedCount;
   }
 
@@ -805,7 +985,12 @@ export class InMemoryEventApi implements EventApi {
       createdAt: new Date().toISOString(),
     };
     this.store.supplyItems.set(record.id, record);
-    this.store.notify(eventId);
+    this.store.emitRealtimeChange(eventId, {
+      table: 'supply_items',
+      eventType: 'INSERT',
+      newRow: { ...record },
+      oldRow: null,
+    });
     return { ...record };
   }
 
@@ -830,7 +1015,12 @@ export class InMemoryEventApi implements EventApi {
 
     const updated: SupplyItem = { ...existing, ...patch };
     this.store.supplyItems.set(supplyItemId, updated);
-    this.store.notify(eventId);
+    this.store.emitRealtimeChange(eventId, {
+      table: 'supply_items',
+      eventType: 'UPDATE',
+      newRow: { ...updated },
+      oldRow: { ...existing },
+    });
     return { ...updated };
   }
 
@@ -849,12 +1039,23 @@ export class InMemoryEventApi implements EventApi {
     }
 
     this.store.supplyItems.delete(supplyItemId);
-    for (const [claimId, claim] of this.store.supplyClaims.entries()) {
+    this.store.emitRealtimeChange(eventId, {
+      table: 'supply_items',
+      eventType: 'DELETE',
+      newRow: null,
+      oldRow: { ...existing },
+    });
+    for (const [claimId, claim] of Array.from(this.store.supplyClaims.entries())) {
       if (claim.supplyItemId === supplyItemId) {
         this.store.supplyClaims.delete(claimId);
+        this.store.emitRealtimeChange(eventId, {
+          table: 'supply_claims',
+          eventType: 'DELETE',
+          newRow: null,
+          oldRow: { ...claim },
+        });
       }
     }
-    this.store.notify(eventId);
   }
 
   async createSupplyClaim(
@@ -869,14 +1070,27 @@ export class InMemoryEventApi implements EventApi {
       createdAt: new Date().toISOString(),
     };
     this.store.supplyClaims.set(record.id, record);
-    this.store.notify(eventId);
+    this.store.emitRealtimeChange(eventId, {
+      table: 'supply_claims',
+      eventType: 'INSERT',
+      newRow: { ...record },
+      oldRow: null,
+    });
     return { ...record };
   }
 
   async deleteSupplyClaim(eventId: string, supplyClaimId: string): Promise<void> {
     this.requireGrant(eventId, ['participant', 'organizer']);
+    const existing = this.store.supplyClaims.get(supplyClaimId);
     this.store.supplyClaims.delete(supplyClaimId);
-    this.store.notify(eventId);
+    if (existing) {
+      this.store.emitRealtimeChange(eventId, {
+        table: 'supply_claims',
+        eventType: 'DELETE',
+        newRow: null,
+        oldRow: { ...existing },
+      });
+    }
   }
 
   async createChipIn(
@@ -894,14 +1108,12 @@ export class InMemoryEventApi implements EventApi {
       recordedAt: new Date().toISOString(),
     };
     this.store.chipIns.set(record.id, record);
-    this.store.notify(eventId);
     return { ...record };
   }
 
   async deleteChipIn(eventId: string, chipInId: string): Promise<void> {
     this.requireGrant(eventId, ['organizer']);
     this.store.chipIns.delete(chipInId);
-    this.store.notify(eventId);
   }
 
   async createBadgeDefinition(
@@ -915,14 +1127,38 @@ export class InMemoryEventApi implements EventApi {
       ...data,
     };
     this.store.badgeDefinitions.set(record.id, record);
-    this.store.notify(eventId);
+    this.store.emitRealtimeChange(eventId, {
+      table: 'badge_definitions',
+      eventType: 'INSERT',
+      newRow: { ...record },
+      oldRow: null,
+    });
     return { ...record };
   }
 
   async deleteBadgeDefinition(eventId: string, badgeDefinitionId: string): Promise<void> {
     this.requireGrant(eventId, ['organizer']);
+    const existing = this.store.badgeDefinitions.get(badgeDefinitionId);
     this.store.badgeDefinitions.delete(badgeDefinitionId);
-    this.store.notify(eventId);
+    if (existing) {
+      this.store.emitRealtimeChange(eventId, {
+        table: 'badge_definitions',
+        eventType: 'DELETE',
+        newRow: null,
+        oldRow: { ...existing },
+      });
+    }
+    for (const [awardId, award] of Array.from(this.store.badgeAwards.entries())) {
+      if (award.badgeDefinitionId === badgeDefinitionId) {
+        this.store.badgeAwards.delete(awardId);
+        this.store.emitRealtimeChange(eventId, {
+          table: 'badge_awards',
+          eventType: 'DELETE',
+          newRow: null,
+          oldRow: { ...award },
+        });
+      }
+    }
   }
 
   async createBadgeAward(
@@ -945,18 +1181,31 @@ export class InMemoryEventApi implements EventApi {
       awardedAt: new Date().toISOString(),
     };
     this.store.badgeAwards.set(record.id, record);
-    this.store.notify(eventId);
+    this.store.emitRealtimeChange(eventId, {
+      table: 'badge_awards',
+      eventType: 'INSERT',
+      newRow: { ...record },
+      oldRow: null,
+    });
     return { ...record };
   }
 
   async deleteBadgeAward(eventId: string, badgeAwardId: string): Promise<void> {
     this.requireGrant(eventId, ['organizer']);
+    const existing = this.store.badgeAwards.get(badgeAwardId);
     this.store.badgeAwards.delete(badgeAwardId);
-    this.store.notify(eventId);
+    if (existing) {
+      this.store.emitRealtimeChange(eventId, {
+        table: 'badge_awards',
+        eventType: 'DELETE',
+        newRow: null,
+        oldRow: { ...existing },
+      });
+    }
   }
 
-  subscribeToEvent(eventId: string, onChange: () => void): Unsubscribe {
-    return this.store.subscribe(eventId, onChange);
+  subscribeToEvent(eventId: string, handlers: RealtimeSubscriptionHandlers): Unsubscribe {
+    return this.store.subscribe(eventId, handlers);
   }
 }
 

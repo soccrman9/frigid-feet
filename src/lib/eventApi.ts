@@ -17,6 +17,8 @@ import type {
   Team,
 } from '../types/domain';
 
+import type { RealtimeSubscriptionHandlers } from '../features/realtime/realtimeTypes';
+
 export type Unsubscribe = () => void;
 
 export interface EventApi {
@@ -130,6 +132,6 @@ export interface EventApi {
   ): Promise<BadgeAward>;
   deleteBadgeAward(eventId: string, badgeAwardId: string): Promise<void>;
 
-  // Realtime (optional hook for downstream tickets)
-  subscribeToEvent?(eventId: string, onChange: () => void): Unsubscribe;
+  // Single-channel Realtime subscription for all 11 live Event tables
+  subscribeToEvent?(eventId: string, handlers: RealtimeSubscriptionHandlers): Unsubscribe;
 }
