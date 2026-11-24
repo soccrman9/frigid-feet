@@ -5,6 +5,7 @@ import { HomeTab } from '../features/home/HomeTab';
 import { TeamsTab } from '../features/teams/TeamsTab';
 import { RaceDayTab } from '../features/race-day/RaceDayTab';
 import { SuppliesTab } from '../features/supplies/SuppliesTab';
+import { EventRecapView } from '../features/recap/EventRecapView';
 import { ThemeToggleButton } from './ThemeToggleButton';
 
 export type ShellTabId = 'home' | 'teams' | 'race-day' | 'supplies';
@@ -40,6 +41,7 @@ function formatLiveClock(date: Date, timezone?: string | null): string {
 export function AppShell({ initialTab = 'home' }: { initialTab?: ShellTabId }) {
   const { snapshot, realtimeStatus, headerRoundSlot, headerStatusSlot } = useEventData();
   const [activeTab, setActiveTab] = useState<ShellTabId>(initialTab);
+  const [showEventRecap, setShowEventRecap] = useState(false);
   const [now, setNow] = useState<Date>(() => new Date());
 
   useEffect(() => {
@@ -113,10 +115,18 @@ export function AppShell({ initialTab = 'home' }: { initialTab?: ShellTabId }) {
 
       {/* Main content area */}
       <main className="flex-1 overflow-y-auto">
-        {activeTab === 'home' && <HomeTab />}
-        {activeTab === 'teams' && <TeamsTab />}
-        {activeTab === 'race-day' && <RaceDayTab />}
-        {activeTab === 'supplies' && <SuppliesTab />}
+        {showEventRecap ? (
+          <EventRecapView onBack={() => setShowEventRecap(false)} />
+        ) : (
+          <>
+            {activeTab === 'home' && <HomeTab onOpenEventRecap={() => setShowEventRecap(true)} />}
+            {activeTab === 'teams' && <TeamsTab />}
+            {activeTab === 'race-day' && (
+              <RaceDayTab onOpenEventRecap={() => setShowEventRecap(true)} />
+            )}
+            {activeTab === 'supplies' && <SuppliesTab />}
+          </>
+        )}
       </main>
 
       {/* Persistent 56px 4-tab bottom navigation bar with 3px top active indicator */}
@@ -129,12 +139,15 @@ export function AppShell({ initialTab = 'home' }: { initialTab?: ShellTabId }) {
         }}
       >
         {TABS.map(({ id, label, Icon }) => {
-          const isActive = activeTab === id;
+          const isActive = !showEventRecap && activeTab === id;
           return (
             <button
               key={id}
               type="button"
-              onClick={() => setActiveTab(id)}
+              onClick={() => {
+                setShowEventRecap(false);
+                setActiveTab(id);
+              }}
               aria-current={isActive ? 'page' : undefined}
               className={`pfl-focus-ring flex min-h-[44px] cursor-pointer flex-col items-center justify-center gap-0.5 border-0 bg-transparent px-1 text-xs font-bold transition-colors ${
                 isActive ? 'pfl-nav-active' : ''
