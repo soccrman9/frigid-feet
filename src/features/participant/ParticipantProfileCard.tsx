@@ -622,15 +622,15 @@ export function ParticipantProfileCard() {
               <div className="mt-3 flex flex-wrap gap-2">
                 <button
                   type="button"
-                  disabled={saving}
+                  disabled={saving || !isOnline}
                   onClick={() => void persistProfile(pendingTeamLeaveProfile, true)}
-                  className="pfl-focus-ring min-h-[44px] flex-1 cursor-pointer rounded-md border-0 px-3 text-sm font-bold"
+                  className="pfl-focus-ring min-h-[44px] flex-1 cursor-pointer rounded-md border-0 px-3 text-sm font-bold disabled:cursor-not-allowed disabled:opacity-65"
                   style={{
                     backgroundColor: 'var(--accent-amber-cta)',
                     color: '#0C1E30',
                   }}
                 >
-                  {saving ? 'Updating…' : 'Confirm & Leave Team'}
+                  {!isOnline ? 'Requires connection' : saving ? 'Updating…' : 'Confirm & Leave Team'}
                 </button>
                 <button
                   type="button"

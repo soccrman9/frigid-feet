@@ -4,6 +4,7 @@ import type { Leg } from '../../types/domain';
 
 export interface UndoToastState {
   id: string;
+  mutationId: string;
   message: string;
   previousLegSnapshot: Leg;
 }

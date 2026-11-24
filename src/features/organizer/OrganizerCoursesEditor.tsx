@@ -327,7 +327,7 @@ export function OrganizerCoursesEditor() {
           }}
         >
           <Plus size={15} strokeWidth={2.5} aria-hidden="true" />
-          <span>Add Course</span>
+          <span>{!isOnline ? 'Requires connection' : 'Add Course'}</span>
         </button>
       </div>
 
@@ -454,9 +454,9 @@ export function OrganizerCoursesEditor() {
                   <button
                     type="button"
                     aria-label={`Edit ${course.name}`}
-                    disabled={saving}
+                    disabled={!isOnline || saving}
                     onClick={() => openEditForm(course)}
-                    className="pfl-focus-ring inline-flex min-h-[44px] cursor-pointer items-center gap-1 rounded-md border px-2.5 text-xs font-bold"
+                    className="pfl-focus-ring inline-flex min-h-[44px] cursor-pointer items-center gap-1 rounded-md border px-2.5 text-xs font-bold disabled:cursor-not-allowed disabled:opacity-50"
                     style={{
                       backgroundColor: 'var(--bg-surface)',
                       borderColor: 'var(--border-strong)',

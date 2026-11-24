@@ -417,7 +417,11 @@ export function OrganizerSecretsSection() {
           >
             <RefreshCw size={14} strokeWidth={2.5} aria-hidden="true" />
             <span>
-              {busySecret === 'invite_code' ? 'Rotating…' : 'Rotate Invite Code'}
+              {!isOnline
+                ? 'Requires connection'
+                : busySecret === 'invite_code'
+                  ? 'Rotating…'
+                  : 'Rotate Invite Code'}
             </span>
           </button>
 
@@ -615,7 +619,11 @@ export function OrganizerSecretsSection() {
           >
             <RefreshCw size={14} strokeWidth={2.5} aria-hidden="true" />
             <span>
-              {busySecret === 'dashboard_token' ? 'Rotating…' : 'Rotate Dashboard Token'}
+              {!isOnline
+                ? 'Requires connection'
+                : busySecret === 'dashboard_token'
+                  ? 'Rotating…'
+                  : 'Rotate Dashboard Token'}
             </span>
           </button>
 
@@ -726,7 +734,11 @@ export function OrganizerSecretsSection() {
         >
           <RefreshCw size={14} strokeWidth={2.5} aria-hidden="true" />
           <span>
-            {busySecret === 'organizer_passcode' ? 'Rotating…' : 'Rotate Organizer Passcode'}
+            {!isOnline
+              ? 'Requires connection'
+              : busySecret === 'organizer_passcode'
+                ? 'Rotating…'
+                : 'Rotate Organizer Passcode'}
           </span>
         </button>
       </form>
