@@ -240,7 +240,7 @@ export function OrganizerModePanel({
     { id: 'announcements', label: 'Announcements', icon: <Megaphone size={15} strokeWidth={2.25} aria-hidden="true" /> },
     { id: 'chip-ins', label: 'Chip-Ins', icon: <Wallet size={15} strokeWidth={2.25} aria-hidden="true" /> },
     { id: 'secrets', label: 'Access & QR', icon: <KeyRound size={15} strokeWidth={2.25} aria-hidden="true" /> },
-    { id: 'export', label: 'Export', icon: <Download size={15} strokeWidth={2.25} aria-hidden="true" /> },
+    { id: 'export', label: 'Backup & Export', icon: <Download size={15} strokeWidth={2.25} aria-hidden="true" /> },
   ];
 
   const allTabs = [
