@@ -199,12 +199,23 @@ describe('Home Participant Profile & RSVP Editor', () => {
     await user.click(screen.getByRole('radio', { name: /Going \(Supporter\)/i }));
     await user.click(screen.getByRole('button', { name: /save profile/i }));
 
-    // Confirmation callout appears before leaving Team
+    // Confirmation callout appears before leaving Team with clear copy
     const alert = await screen.findByRole('alert');
     expect(alert).toHaveTextContent(/Frostbite Fighters/i);
+    expect(alert).toHaveTextContent(/future scheduled Legs will be unassigned/i);
+    expect(alert).toHaveTextContent(/completed Legs stay preserved/i);
 
-    // Confirming calls leaveTeam and saves the updated RSVP
-    await user.click(screen.getByRole('button', { name: /confirm & leave team/i }));
+    // Cancelling keeps Runner on the Team without calling leaveTeam
+    await user.click(screen.getByRole('button', { name: /keep going \(runner\)/i }));
+    expect(screen.queryByRole('button', { name: /confirm & leave team/i })).not.toBeInTheDocument();
+    const stillOnTeamSnap = await api.getEventSnapshot(eventId);
+    expect(stillOnTeamSnap.participants.find((p) => p.id === maya.id)?.teamId).toBe(team.id);
+    expect(stillOnTeamSnap.legs.find((l) => l.id === round1Leg.id)?.runnerId).toBe(maya.id);
+
+    // Re-trigger RSVP switch and confirm -> calls leaveTeam and saves updated RSVP
+    await user.click(screen.getByRole('radio', { name: /Going \(Supporter\)/i }));
+    await user.click(screen.getByRole('button', { name: /save profile/i }));
+    await user.click(await screen.findByRole('button', { name: /confirm & leave team/i }));
     expect(await screen.findByRole('status')).toHaveTextContent(/profile saved/i);
 
     const updatedSnap = await api.getEventSnapshot(eventId);
