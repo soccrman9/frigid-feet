@@ -791,17 +791,38 @@ export class SupabaseEventApi implements EventApi {
       .eq('id', supplyItemId)
       .select('*')
       .single();
-    if (error || !row) handleSupabaseError(error);
+    if (error) {
+      if (error.code === 'PGRST116') {
+        throw new EventAccessError(
+          'FORBIDDEN',
+          'You do not have permission to edit this Supply item.',
+        );
+      }
+      handleSupabaseError(error);
+    }
+    if (!row) {
+      throw new EventAccessError(
+        'FORBIDDEN',
+        'You do not have permission to edit this Supply item.',
+      );
+    }
     return mapSupplyItem(row as Row);
   }
 
   async deleteSupplyItem(eventId: string, supplyItemId: string): Promise<void> {
-    const { error } = await this.client
+    const { data, error } = await this.client
       .from('supply_items')
       .delete()
       .eq('event_id', eventId)
-      .eq('id', supplyItemId);
+      .eq('id', supplyItemId)
+      .select('id');
     if (error) handleSupabaseError(error);
+    if (!data || data.length === 0) {
+      throw new EventAccessError(
+        'FORBIDDEN',
+        'You do not have permission to delete this Supply item.',
+      );
+    }
   }
 
   async createSupplyClaim(
