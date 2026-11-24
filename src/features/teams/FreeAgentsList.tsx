@@ -171,6 +171,7 @@ export function FreeAgentsList({
                       {teams.map((team) => (
                         <option key={team.id} value={team.id}>
                           {team.name}
+                          {team.isOpen ? '' : ' (Closed)'}
                         </option>
                       ))}
                     </select>

@@ -6,7 +6,8 @@ import { WishlistSuppliesSection } from './WishlistSuppliesSection';
 import { VolunteeredSuppliesSection } from './VolunteeredSuppliesSection';
 
 export function SuppliesTab() {
-  const { eventApi, eventId, snapshot, activeParticipant, isOnline, setSnapshot } = useEventData();
+  const { eventApi, eventId, snapshot, activeParticipant, isOrganizer, isOnline, setSnapshot } =
+    useEventData();
 
   const participantsById = useMemo(
     () => new Map(snapshot.participants.map((participant) => [participant.id, participant])),
@@ -96,6 +97,57 @@ export function SuppliesTab() {
     [eventApi, eventId, setSnapshot],
   );
 
+  const handleCreateWishlistItem = useCallback(
+    async (name: string, category: SupplyCategory, targetSlots: number) => {
+      const createdItem = await eventApi.createSupplyItem(eventId, {
+        category,
+        name,
+        isWishlist: true,
+        targetSlots,
+        createdByParticipantId: null,
+      });
+      setSnapshot((prev) => ({
+        ...prev,
+        supplyItems: [...prev.supplyItems, createdItem],
+      }));
+    },
+    [eventApi, eventId, setSnapshot],
+  );
+
+  const handleUpdateWishlistItem = useCallback(
+    async (
+      supplyItemId: string,
+      name: string,
+      category: SupplyCategory,
+      targetSlots: number,
+    ) => {
+      const updatedItem = await eventApi.updateSupplyItem(eventId, supplyItemId, {
+        name,
+        category,
+        targetSlots,
+      });
+      setSnapshot((prev) => ({
+        ...prev,
+        supplyItems: prev.supplyItems.map((item) =>
+          item.id === updatedItem.id ? updatedItem : item,
+        ),
+      }));
+    },
+    [eventApi, eventId, setSnapshot],
+  );
+
+  const handleDeleteWishlistItem = useCallback(
+    async (supplyItemId: string) => {
+      await eventApi.deleteSupplyItem(eventId, supplyItemId);
+      setSnapshot((prev) => ({
+        ...prev,
+        supplyItems: prev.supplyItems.filter((item) => item.id !== supplyItemId),
+        supplyClaims: prev.supplyClaims.filter((claim) => claim.supplyItemId !== supplyItemId),
+      }));
+    },
+    [eventApi, eventId, setSnapshot],
+  );
+
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-3 p-3 pb-6">
       <section
@@ -127,15 +179,20 @@ export function SuppliesTab() {
         claims={snapshot.supplyClaims}
         participantsById={participantsById}
         activeParticipant={activeParticipant}
+        isOrganizer={isOrganizer}
         isOnline={isOnline}
         onClaim={handleClaimWishlistItem}
         onUnclaim={handleUnclaimWishlistItem}
+        onCreateItem={handleCreateWishlistItem}
+        onUpdateItem={handleUpdateWishlistItem}
+        onDeleteItem={handleDeleteWishlistItem}
       />
 
       <VolunteeredSuppliesSection
         items={volunteeredItems}
         participantsById={participantsById}
         activeParticipant={activeParticipant}
+        isOrganizer={isOrganizer}
         isOnline={isOnline}
         onAdd={handleAddVolunteeredItem}
         onUpdate={handleUpdateVolunteeredItem}

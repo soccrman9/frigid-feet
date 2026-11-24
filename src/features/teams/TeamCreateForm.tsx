@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { Check, Lock, Unlock } from 'lucide-react';
-import { TEAM_COLOR_PRESETS, TEAM_EMOJI_PRESETS } from './teamScheduleWarnings';
+import type { Participant } from '../../types/domain';
+import { formatRoundWindow, TEAM_COLOR_PRESETS, TEAM_EMOJI_PRESETS } from './teamScheduleWarnings';
 
 export interface TeamFormValues {
   name: string;
@@ -9,12 +10,15 @@ export interface TeamFormValues {
   emoji: string | null;
   isOpen: boolean;
   lookingNote: string | null;
+  initialRunnerIds?: string[];
 }
 
 interface TeamCreateFormProps {
   mode?: 'create' | 'edit';
   initialValues?: Partial<TeamFormValues>;
   willAutoJoinCreator?: boolean;
+  isOrganizer?: boolean;
+  freeAgents?: readonly Participant[];
   isOnline: boolean;
   busy: boolean;
   onSubmit: (values: TeamFormValues) => Promise<void> | void;
@@ -25,6 +29,8 @@ export function TeamCreateForm({
   mode = 'create',
   initialValues,
   willAutoJoinCreator = true,
+  isOrganizer = false,
+  freeAgents = [],
   isOnline,
   busy,
   onSubmit,
@@ -36,7 +42,18 @@ export function TeamCreateForm({
   const [colorHex, setColorHex] = useState<string | null>(initialValues?.colorHex ?? null);
   const [isOpen, setIsOpen] = useState(initialValues?.isOpen ?? true);
   const [lookingNote, setLookingNote] = useState(initialValues?.lookingNote ?? '');
+  const [selectedRunnerIds, setSelectedRunnerIds] = useState<string[]>(
+    initialValues?.initialRunnerIds ?? [],
+  );
   const [validationError, setValidationError] = useState<string | null>(null);
+
+  function toggleRunnerSelection(participantId: string) {
+    setSelectedRunnerIds((prev) =>
+      prev.includes(participantId)
+        ? prev.filter((id) => id !== participantId)
+        : [...prev, participantId],
+    );
+  }
 
   async function handleFormSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -58,6 +75,7 @@ export function TeamCreateForm({
       emoji: trimmedEmoji.length > 0 ? trimmedEmoji : null,
       isOpen,
       lookingNote: trimmedLooking.length > 0 ? trimmedLooking : null,
+      ...(mode === 'create' && isOrganizer ? { initialRunnerIds: selectedRunnerIds } : {}),
     });
   }
 
@@ -288,6 +306,57 @@ export function TeamCreateForm({
             }}
           />
         </div>
+
+        {mode === 'create' && isOrganizer && freeAgents.length > 0 && (
+          <fieldset className="m-0 border-0 p-0">
+            <legend
+              className="mb-1.5 text-xs font-bold tracking-wider uppercase"
+              style={{ color: 'var(--ink-secondary)' }}
+            >
+              Place Free Agents on this Team (optional)
+            </legend>
+            <div
+              className="flex flex-col divide-y rounded-md border"
+              style={{
+                backgroundColor: 'var(--bg-ground)',
+                borderColor: 'var(--border-strong)',
+              }}
+            >
+              {freeAgents.map((agent) => {
+                const checked = selectedRunnerIds.includes(agent.id);
+                const checkboxId = `create-team-agent-${agent.id}`;
+                return (
+                  <label
+                    key={agent.id}
+                    htmlFor={checkboxId}
+                    className="flex min-h-[44px] cursor-pointer items-center justify-between gap-2 px-3 py-2 text-sm"
+                    style={{ borderColor: 'var(--border-hairline)' }}
+                  >
+                    <span className="flex items-center gap-2.5">
+                      <input
+                        id={checkboxId}
+                        type="checkbox"
+                        checked={checked}
+                        disabled={busy || !isOnline}
+                        onChange={() => toggleRunnerSelection(agent.id)}
+                        className="h-4 w-4 accent-[#163A59]"
+                      />
+                      <span className="font-bold" style={{ color: 'var(--ink-primary)' }}>
+                        {agent.displayName}
+                      </span>
+                    </span>
+                    <span
+                      className="text-xs font-semibold tabular-nums"
+                      style={{ color: 'var(--ink-secondary)' }}
+                    >
+                      {formatRoundWindow(agent.availableFromRound, agent.availableToRound)}
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
+          </fieldset>
+        )}
 
         {validationError && (
           <div

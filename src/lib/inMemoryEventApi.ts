@@ -800,6 +800,16 @@ export class InMemoryEventApi implements EventApi {
       this.requireGrant(eventId, ['participant', 'organizer']);
     }
 
+    if (
+      data.targetSlots !== null &&
+      (!Number.isInteger(data.targetSlots) || data.targetSlots < 1)
+    ) {
+      throw new EventAccessError(
+        'VALIDATION_ERROR',
+        'targetSlots must be null or an integer of at least 1.',
+      );
+    }
+
     const record: SupplyItem = {
       id: generateId(),
       eventId,
@@ -831,6 +841,15 @@ export class InMemoryEventApi implements EventApi {
     }
 
     const updated: SupplyItem = { ...existing, ...patch };
+    if (
+      updated.targetSlots !== null &&
+      (!Number.isInteger(updated.targetSlots) || updated.targetSlots < 1)
+    ) {
+      throw new EventAccessError(
+        'VALIDATION_ERROR',
+        'targetSlots must be null or an integer of at least 1.',
+      );
+    }
     this.store.supplyItems.set(supplyItemId, updated);
     this.store.notify(eventId);
     return { ...updated };
