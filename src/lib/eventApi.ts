@@ -118,6 +118,11 @@ export interface EventApi {
     eventId: string,
     data: Omit<ChipIn, 'id' | 'eventId' | 'recordedAt'>,
   ): Promise<ChipIn>;
+  updateChipIn(
+    eventId: string,
+    chipInId: string,
+    patch: Partial<Omit<ChipIn, 'id' | 'eventId' | 'recordedAt'>>,
+  ): Promise<ChipIn>;
   deleteChipIn(eventId: string, chipInId: string): Promise<void>;
 
   // Badges (Organizer only)

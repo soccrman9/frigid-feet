@@ -86,7 +86,12 @@ export function TeamsTab() {
         lookingNote: values.lookingNote,
       });
 
-      if (isFreeAgent && activeParticipant) {
+      if (isOrganizer) {
+        const selectedIds = values.initialRunnerIds ?? [];
+        for (const runnerId of selectedIds) {
+          await eventApi.updateParticipant(eventId, runnerId, { teamId: created.id });
+        }
+      } else if (isFreeAgent && activeParticipant) {
         await eventApi.updateParticipant(eventId, activeParticipant.id, {
           teamId: created.id,
         });
@@ -94,7 +99,12 @@ export function TeamsTab() {
 
       await refreshSnapshot();
       setShowCreateForm(false);
-      setStatusMessage(`Created Team "${created.name}" with 10 Rounds ready to schedule.`);
+      const addedCount = isOrganizer ? (values.initialRunnerIds?.length ?? 0) : 0;
+      setStatusMessage(
+        addedCount > 0
+          ? `Created Team "${created.name}" with ${addedCount} ${addedCount === 1 ? 'Runner' : 'Runners'} and 10 Rounds ready to schedule.`
+          : `Created Team "${created.name}" with 10 Rounds ready to schedule.`,
+      );
     } catch (err) {
       setErrorMessage(err instanceof Error ? err.message : 'Could not create Team.');
     } finally {
@@ -175,16 +185,58 @@ export function TeamsTab() {
   }
 
   async function handleOrganizerAssign(participantId: string, teamId: string) {
-    if (!isOrganizer || !isOnline) return;
+    if (!isOrganizer) return;
+    if (!isOnline) {
+      setErrorMessage('Requires connection to assign a Runner.');
+      return;
+    }
     setBusy(true);
     setErrorMessage(null);
     setStatusMessage(null);
     try {
       await eventApi.updateParticipant(eventId, participantId, { teamId });
       await refreshSnapshot();
-      setStatusMessage('Assigned Runner to Team.');
+      const runnerName =
+        snapshot.participants.find((p) => p.id === participantId)?.displayName ?? 'Runner';
+      const teamName = snapshot.teams.find((t) => t.id === teamId)?.name ?? 'Team';
+      setStatusMessage(`Assigned ${runnerName} to ${teamName}.`);
     } catch (err) {
       setErrorMessage(err instanceof Error ? err.message : 'Could not assign Runner.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleOrganizerMoveRunner(participantId: string, targetTeamId: string | null) {
+    if (!isOrganizer) return;
+    if (!isOnline) {
+      setErrorMessage('Requires connection to move a Runner.');
+      return;
+    }
+    const participant = snapshot.participants.find((p) => p.id === participantId);
+    if (!participant || participant.teamId === targetTeamId) return;
+
+    setBusy(true);
+    setErrorMessage(null);
+    setStatusMessage(null);
+    try {
+      // Use leaveTeam semantics first so old 'scheduled' Legs are unassigned while
+      // 'completed' and 'out_on_course' Legs stay preserved (and empty old Teams clean up).
+      await eventApi.leaveTeam(participantId);
+      if (targetTeamId) {
+        await eventApi.updateParticipant(eventId, participantId, { teamId: targetTeamId });
+      }
+      await refreshSnapshot();
+      const targetTeamName = targetTeamId
+        ? (snapshot.teams.find((t) => t.id === targetTeamId)?.name ?? 'Team')
+        : null;
+      setStatusMessage(
+        targetTeamName
+          ? `Moved ${participant.displayName} to ${targetTeamName}.`
+          : `Moved ${participant.displayName} back to Free Agents.`,
+      );
+    } catch (err) {
+      setErrorMessage(err instanceof Error ? err.message : 'Could not move Runner.');
     } finally {
       setBusy(false);
     }
@@ -400,7 +452,9 @@ export function TeamsTab() {
       {showCreateForm && canCreateTeam && (
         <TeamCreateForm
           mode="create"
-          willAutoJoinCreator={isFreeAgent}
+          willAutoJoinCreator={!isOrganizer && isFreeAgent}
+          isOrganizer={isOrganizer}
+          freeAgents={freeAgents}
           isOnline={isOnline}
           busy={busy}
           onSubmit={handleCreateTeam}
@@ -437,8 +491,10 @@ export function TeamsTab() {
                 key={team.id}
                 team={team}
                 teamMembers={members}
+                allTeams={sortedTeams}
                 legs={snapshot.legs}
                 isUsersTeam={isUsersTeam}
+                isOrganizer={isOrganizer}
                 canJoin={isFreeAgent}
                 isRunnerOnAnotherTeam={isRunnerOnTeam && !isUsersTeam}
                 isOnline={isOnline}
@@ -453,6 +509,9 @@ export function TeamsTab() {
                 onRequestLeave={(id) => setConfirmingLeaveTeamId(id)}
                 onConfirmLeave={() => void handleConfirmLeaveTeam()}
                 onCancelLeave={() => setConfirmingLeaveTeamId(null)}
+                onOrganizerMoveRunner={(participantId, targetTeamId) =>
+                  void handleOrganizerMoveRunner(participantId, targetTeamId)
+                }
               />
             );
           })

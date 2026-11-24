@@ -970,13 +970,55 @@ export class SupabaseEventApi implements EventApi {
     return mapChipIn(row as Row);
   }
 
+  async updateChipIn(
+    eventId: string,
+    chipInId: string,
+    patch: Partial<Omit<ChipIn, 'id' | 'eventId' | 'recordedAt'>>,
+  ): Promise<ChipIn> {
+    const payload: Row = {};
+    if (patch.participantId !== undefined) payload.participant_id = patch.participantId;
+    if (patch.amountCents !== undefined) payload.amount_cents = patch.amountCents;
+    if (patch.note !== undefined) payload.note = patch.note;
+
+    const { data: row, error } = await this.client
+      .from('chip_ins')
+      .update(payload)
+      .eq('event_id', eventId)
+      .eq('id', chipInId)
+      .select('*')
+      .single();
+    if (error) {
+      if (error.code === 'PGRST116') {
+        throw new EventAccessError(
+          'FORBIDDEN',
+          'You do not have permission to edit this chip-in entry.',
+        );
+      }
+      handleSupabaseError(error);
+    }
+    if (!row) {
+      throw new EventAccessError(
+        'FORBIDDEN',
+        'You do not have permission to edit this chip-in entry.',
+      );
+    }
+    return mapChipIn(row as Row);
+  }
+
   async deleteChipIn(eventId: string, chipInId: string): Promise<void> {
-    const { error } = await this.client
+    const { data, error } = await this.client
       .from('chip_ins')
       .delete()
       .eq('event_id', eventId)
-      .eq('id', chipInId);
+      .eq('id', chipInId)
+      .select('id');
     if (error) handleSupabaseError(error);
+    if (!data || data.length === 0) {
+      throw new EventAccessError(
+        'FORBIDDEN',
+        'You do not have permission to delete this chip-in entry.',
+      );
+    }
   }
 
   async createBadgeDefinition(
