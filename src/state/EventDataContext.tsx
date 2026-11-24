@@ -146,9 +146,14 @@ export function EventDataProvider({
   const [pendingQueue, setPendingQueue] = useState<QueuedLegMutation[]>(initialPendingQueue);
   const [grants, setGrants] = useState<GrantScope[]>(initialGrants);
   const [organizerUiLocked, setOrganizerUiLocked] = useState(false);
-  const [activeParticipantId, setActiveParticipantId] = useState<string | null>(() =>
-    getSavedParticipantId(eventId),
-  );
+  const [activeParticipantId, setActiveParticipantId] = useState<string | null>(() => {
+    const saved = getSavedParticipantId(eventId);
+    if (saved && !initialSnapshot.participants.some((p) => p.id === saved)) {
+      clearSavedParticipantId(eventId);
+      return null;
+    }
+    return saved;
+  });
   const [isOnline, setIsOnline] = useState<boolean>(
     typeof navigator !== 'undefined' ? navigator.onLine : true,
   );
