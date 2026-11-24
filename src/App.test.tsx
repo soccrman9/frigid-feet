@@ -44,8 +44,9 @@ describe('App routing, Event invite gate, and URL stripping', () => {
     expect(screen.queryByText('Winter Grind 50K 2027')).not.toBeInTheDocument();
   });
 
-  it('auto-unlocks on /e/:slug?code=<valid>, strips ?code= via history.replaceState, and enters the Polar Field Log shell', async () => {
+  it('auto-unlocks on /e/:slug?code=<valid>, strips ?code= via history.replaceState, and enters the Polar Field Log shell after Participant check-in', async () => {
     const api = createTestApi();
+    const user = userEvent.setup();
     window.history.replaceState(null, '', '/e/2027?code=FROST-2027');
     const replaceSpy = vi.spyOn(window.history, 'replaceState');
 
@@ -53,11 +54,17 @@ describe('App routing, Event invite gate, and URL stripping', () => {
 
     const banner = await screen.findByRole('banner');
     expect(within(banner).getByText('Winter Grind 50K 2027')).toBeInTheDocument();
-    expect(screen.getByRole('navigation', { name: /primary/i })).toBeInTheDocument();
 
     expect(window.location.pathname).toBe('/e/2027');
     expect(window.location.search).toBe('');
     expect(replaceSpy).toHaveBeenCalled();
+
+    // Unlocked session without a saved Participant presents the honor-system picker before entering the 4-tab shell
+    expect(await screen.findByRole('heading', { name: /who's checking in/i })).toBeInTheDocument();
+    await user.type(screen.getByLabelText(/your name/i), 'Alex Rivera');
+    await user.click(screen.getByRole('button', { name: /join event/i }));
+
+    expect(await screen.findByRole('navigation', { name: /primary/i })).toBeInTheDocument();
   });
 
   it('shows clear error feedback on invalid manual invite code and unlocks on valid manual invite code', async () => {

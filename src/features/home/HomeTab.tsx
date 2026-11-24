@@ -1,4 +1,5 @@
 import { useEventData } from '../../state/EventDataContext';
+import { ParticipantProfileCard } from '../participant/ParticipantProfileCard';
 import { AnnouncementsFeed } from './AnnouncementsFeed';
 import { CoursesSection } from './CoursesSection';
 import { EventInfoSection } from './EventInfoSection';
@@ -9,6 +10,8 @@ export function HomeTab() {
 
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-4 p-3 pb-6">
+      <ParticipantProfileCard />
+
       <EventInfoSection
         event={event}
         rounds={rounds}

@@ -2,9 +2,18 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import type { EventApi } from '../../lib/eventApi';
 import type { EventSnapshot, GrantScope } from '../../types/domain';
-import { EventDataProvider } from '../../state/EventDataContext';
+import { EventDataProvider, useEventData } from '../../state/EventDataContext';
 import { AppShell } from '../../components/AppShell';
+import { ParticipantPickerScreen } from '../participant/ParticipantPickerScreen';
 import { InviteGateScreen } from './InviteGateScreen';
+
+function UnlockedEventGate() {
+  const { activeParticipant } = useEventData();
+  if (!activeParticipant) {
+    return <ParticipantPickerScreen />;
+  }
+  return <AppShell />;
+}
 
 interface UnlockedState {
   eventId: string;
@@ -152,12 +161,13 @@ export function EventRoutePage({ eventApi }: { eventApi: EventApi }) {
 
   return (
     <EventDataProvider
+      key={unlocked.eventId}
       eventApi={eventApi}
       eventId={unlocked.eventId}
       initialSnapshot={unlocked.snapshot}
       initialGrants={unlocked.grants}
     >
-      <AppShell />
+      <UnlockedEventGate />
     </EventDataProvider>
   );
 }
