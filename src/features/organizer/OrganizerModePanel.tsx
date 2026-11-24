@@ -1,6 +1,7 @@
 import { useState, type FormEvent, type ReactNode } from 'react';
 import {
   CalendarCog,
+  Download,
   KeyRound,
   Lock,
   Megaphone,
@@ -14,6 +15,7 @@ import { OrganizerChipInLedger } from '../chip-in/OrganizerChipInLedger';
 import { OrganizerAnnouncementsEditor } from './OrganizerAnnouncementsEditor';
 import { OrganizerCoursesEditor } from './OrganizerCoursesEditor';
 import { OrganizerEventEditor } from './OrganizerEventEditor';
+import { OrganizerExportSection } from './OrganizerExportSection';
 import { OrganizerSecretsSection } from './OrganizerSecretsSection';
 
 export type OrganizerSectionId =
@@ -22,6 +24,7 @@ export type OrganizerSectionId =
   | 'announcements'
   | 'chip-ins'
   | 'secrets'
+  | 'export'
   | string;
 
 export interface OrganizerTabExtension {
@@ -39,6 +42,7 @@ interface OrganizerModePanelProps {
   renderAnnouncementsEditor?: () => ReactNode;
   renderChipInsLedger?: () => ReactNode;
   renderSecretsSection?: () => ReactNode;
+  renderExportSection?: () => ReactNode;
 }
 
 export function OrganizerModePanel({
@@ -48,6 +52,7 @@ export function OrganizerModePanel({
   renderAnnouncementsEditor,
   renderChipInsLedger,
   renderSecretsSection,
+  renderExportSection,
 }: OrganizerModePanelProps) {
   const { isOrganizer, isOnline, unlockOrganizer, lockOrganizer } = useEventData();
   const [promptOpen, setPromptOpen] = useState(false);
@@ -235,6 +240,7 @@ export function OrganizerModePanel({
     { id: 'announcements', label: 'Announcements', icon: <Megaphone size={15} strokeWidth={2.25} aria-hidden="true" /> },
     { id: 'chip-ins', label: 'Chip-Ins', icon: <Wallet size={15} strokeWidth={2.25} aria-hidden="true" /> },
     { id: 'secrets', label: 'Access & QR', icon: <KeyRound size={15} strokeWidth={2.25} aria-hidden="true" /> },
+    { id: 'export', label: 'Backup & Export', icon: <Download size={15} strokeWidth={2.25} aria-hidden="true" /> },
   ];
 
   const allTabs = [
@@ -333,6 +339,8 @@ export function OrganizerModePanel({
           (renderChipInsLedger ? renderChipInsLedger() : <OrganizerChipInLedger />)}
         {activeTab === 'secrets' &&
           (renderSecretsSection ? renderSecretsSection() : <OrganizerSecretsSection />)}
+        {activeTab === 'export' &&
+          (renderExportSection ? renderExportSection() : <OrganizerExportSection />)}
         {activeExtension && activeExtension.render()}
       </div>
     </section>

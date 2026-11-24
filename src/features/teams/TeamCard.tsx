@@ -1,8 +1,11 @@
+import { useState } from 'react';
 import {
   AlertTriangle,
+  ArrowRightLeft,
   CalendarDays,
   Lock,
   LogOut,
+  ShieldCheck,
   Unlock,
   UserPlus,
   Users,
@@ -17,8 +20,10 @@ import {
 interface TeamCardProps {
   team: Team;
   teamMembers: readonly Participant[];
+  allTeams?: readonly Team[];
   legs: readonly Leg[];
   isUsersTeam: boolean;
+  isOrganizer?: boolean;
   canJoin: boolean;
   isRunnerOnAnotherTeam: boolean;
   isOnline: boolean;
@@ -29,13 +34,16 @@ interface TeamCardProps {
   onRequestLeave: (teamId: string) => void;
   onConfirmLeave: () => void;
   onCancelLeave: () => void;
+  onOrganizerMoveRunner?: (participantId: string, targetTeamId: string | null) => void;
 }
 
 export function TeamCard({
   team,
   teamMembers,
+  allTeams = [],
   legs,
   isUsersTeam,
+  isOrganizer = false,
   canJoin,
   isRunnerOnAnotherTeam,
   isOnline,
@@ -46,7 +54,10 @@ export function TeamCard({
   onRequestLeave,
   onConfirmLeave,
   onCancelLeave,
+  onOrganizerMoveRunner,
 }: TeamCardProps) {
+  const [targetByRunnerId, setTargetByRunnerId] = useState<Record<string, string>>({});
+  const otherTeams = allTeams.filter((candidate) => candidate.id !== team.id);
   const coverage = getTeamCoverage(team.id, legs);
   const accentColor = sanitizeColorHex(team.colorHex);
   const legsByRound = new Map<number, Leg>();
@@ -253,6 +264,92 @@ export function TeamCard({
             </div>
           )}
         </div>
+
+        {/* Organizer Roster Move Overrides */}
+        {isOrganizer && teamMembers.length > 0 && onOrganizerMoveRunner && (
+          <div
+            className="mt-3 rounded-md border p-2.5"
+            style={{
+              backgroundColor: 'var(--bg-ground)',
+              borderColor: 'var(--accent-amber)',
+            }}
+          >
+            <p
+              className="flex items-center gap-1.5 text-[11px] font-bold tracking-wider uppercase"
+              style={{ color: 'var(--accent-amber-ink)' }}
+            >
+              <ShieldCheck size={13} strokeWidth={2.4} aria-hidden="true" />
+              <span>Organizer Roster Overrides</span>
+            </p>
+            <ul className="mt-2 flex flex-col gap-2">
+              {teamMembers.map((member) => {
+                const defaultDest = otherTeams[0]?.id ?? '';
+                const storedDest = targetByRunnerId[member.id];
+                const selectedDest =
+                  storedDest !== undefined &&
+                  (storedDest === '' || otherTeams.some((other) => other.id === storedDest))
+                    ? storedDest
+                    : defaultDest;
+
+                return (
+                  <li key={member.id} className="flex flex-wrap items-center gap-2">
+                    <span
+                      className="min-w-[110px] text-xs font-bold"
+                      style={{ color: 'var(--ink-primary)' }}
+                    >
+                      {member.displayName}
+                    </span>
+                    <label htmlFor={`move-runner-${member.id}`} className="sr-only">
+                      Move {member.displayName} to
+                    </label>
+                    <select
+                      id={`move-runner-${member.id}`}
+                      value={selectedDest}
+                      disabled={busy || !isOnline}
+                      onChange={(e) =>
+                        setTargetByRunnerId((prev) => ({
+                          ...prev,
+                          [member.id]: e.target.value,
+                        }))
+                      }
+                      className="pfl-focus-ring min-h-[44px] min-w-[150px] flex-1 rounded-md border-[1.5px] px-2.5 text-xs font-semibold disabled:opacity-60"
+                      style={{
+                        backgroundColor: 'var(--bg-surface)',
+                        borderColor: 'var(--border-strong)',
+                        color: 'var(--ink-primary)',
+                      }}
+                    >
+                      {otherTeams.map((other) => (
+                        <option key={other.id} value={other.id}>
+                          {other.name}
+                          {other.isOpen ? '' : ' (Closed)'}
+                        </option>
+                      ))}
+                      <option value="">Free Agents (Unassigned)</option>
+                    </select>
+                    <button
+                      type="button"
+                      disabled={busy || !isOnline}
+                      aria-label={`Move ${member.displayName}`}
+                      onClick={() =>
+                        onOrganizerMoveRunner(member.id, selectedDest ? selectedDest : null)
+                      }
+                      className="pfl-focus-ring inline-flex min-h-[44px] cursor-pointer items-center justify-center gap-1 rounded-md border-[1.5px] px-3 text-xs font-bold disabled:cursor-not-allowed disabled:opacity-60"
+                      style={{
+                        backgroundColor: 'var(--bg-surface)',
+                        borderColor: 'var(--border-strong)',
+                        color: 'var(--ink-primary)',
+                      }}
+                    >
+                      <ArrowRightLeft size={13} strokeWidth={2.2} aria-hidden="true" />
+                      <span>{!isOnline ? 'Requires connection' : 'Move'}</span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        )}
 
         {/* Inline Leave Team confirmation prompt */}
         {confirmingLeave && isUsersTeam && (
