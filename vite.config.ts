@@ -1,5 +1,6 @@
 /// <reference types="vitest/config" />
 import { defineConfig } from 'vite';
+import { configDefaults } from 'vitest/config';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { VitePWA } from 'vite-plugin-pwa';
@@ -43,5 +44,6 @@ export default defineConfig({
     globals: true,
     setupFiles: ['./src/test/setup.ts'],
     css: true,
+    exclude: [...configDefaults.exclude, '**/.worktrees/**'],
   },
 });
