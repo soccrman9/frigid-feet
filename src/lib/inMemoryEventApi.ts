@@ -21,8 +21,8 @@ import {
   type SupplyItem,
   type Team,
 } from '../types/domain';
-import { toSafeHttpsUrl } from '../features/home/urlSafety';
 import type { EventApi, Unsubscribe } from './eventApi';
+import { toSafeHttpsUrl } from '../features/home/urlSafety';
 
 interface StoredSecrets {
   eventId: string;
@@ -41,10 +41,11 @@ function generateId(): string {
 
 function validateHttpsUrl(url: string | null | undefined, fieldName: string): void {
   if (url == null) return;
-  if (!toSafeHttpsUrl(url)) {
+  const safe = toSafeHttpsUrl(url);
+  if (!safe || safe !== url) {
     throw new EventAccessError(
       'VALIDATION_ERROR',
-      `${fieldName} must be a valid https:// URL of 500 characters or fewer.`,
+      `${fieldName} must be a valid https:// URL (500 characters or fewer).`,
     );
   }
 }
