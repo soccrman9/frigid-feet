@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { Award, ArrowLeft, Timer } from 'lucide-react';
 import type { Leg, LegStatus } from '../../types/domain';
 import { useEventData, type LegMutationActionType } from '../../state/EventDataContext';
 import { BadgesSubView } from '../badges/BadgesSubView';
+import { EventRecapView } from '../recap/EventRecapView';
+import { SpeedLeaderboardSubView } from '../recap/SpeedLeaderboardSubView';
 import { LegEditorDialog, type LegEditorSavePayload } from './LegEditorDialog';
 import {
   RaceDayToasts,
@@ -374,7 +375,6 @@ export function RaceDayTab({
   }, [onOpenEventRecap]);
 
   const showDock = subView === 'timeline' && !showInlineRecap && dockState.kind !== 'hidden';
-  const totalEventKm = completedLegsCount * 5;
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
@@ -439,49 +439,10 @@ export function RaceDayTab({
       <div className="min-h-0 flex-1 overflow-y-auto">
         <div className="mx-auto flex w-full max-w-2xl flex-col gap-3 px-3 py-2.5 pb-6">
           {showInlineRecap ? (
-            <section
-              aria-label="Event Recap"
-              className="rounded-[6px] border-[1.5px] p-4"
-              style={{
-                backgroundColor: 'var(--bg-surface)',
-                borderColor: 'var(--border-strong)',
-              }}
-            >
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  <Award size={20} style={{ color: 'var(--accent-spruce)' }} aria-hidden="true" />
-                  <h2 className="text-base font-bold" style={{ color: 'var(--ink-primary)' }}>
-                    Event Recap
-                  </h2>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setShowInlineRecap(false)}
-                  className="pfl-focus-ring inline-flex min-h-[44px] cursor-pointer items-center gap-1.5 rounded-md border px-3 text-sm font-bold"
-                  style={{
-                    backgroundColor: 'var(--bg-rail-subtle)',
-                    borderColor: 'var(--border-strong)',
-                    color: 'var(--ink-primary)',
-                  }}
-                >
-                  <ArrowLeft size={16} aria-hidden="true" />
-                  Back to Timeline
-                </button>
-              </div>
-              <p
-                className="font-telemetry mt-3 text-2xl font-bold"
-                style={{ color: 'var(--accent-spruce)' }}
-              >
-                {totalEventKm} km run together
-              </p>
-              <p className="mt-1 text-sm" style={{ color: 'var(--ink-secondary)' }}>
-                {completedLegsCount} completed 5K {completedLegsCount === 1 ? 'Leg' : 'Legs'} across{' '}
-                {snapshot.teams.length} {snapshot.teams.length === 1 ? 'Team' : 'Teams'}.
-              </p>
-              <div className="mt-3">
-                <TeamProgressList teams={snapshot.teams} legs={snapshot.legs} />
-              </div>
-            </section>
+            <EventRecapView
+              onBack={() => setShowInlineRecap(false)}
+              backLabel="Back to Timeline"
+            />
           ) : subView === 'timeline' ? (
             <>
               <RoundLineup
@@ -533,25 +494,7 @@ export function RaceDayTab({
           ) : renderSpeedBoardView ? (
             renderSpeedBoardView()
           ) : (
-            <section
-              aria-label="Speed Board"
-              className="rounded-[6px] border-[1.5px] p-4"
-              style={{
-                backgroundColor: 'var(--bg-surface)',
-                borderColor: 'var(--border-strong)',
-              }}
-            >
-              <div className="flex items-center gap-2">
-                <Timer size={18} style={{ color: 'var(--ink-secondary)' }} aria-hidden="true" />
-                <h2 className="text-base font-bold" style={{ color: 'var(--ink-primary)' }}>
-                  Speed Board
-                </h2>
-              </div>
-              <p className="mt-1.5 text-sm" style={{ color: 'var(--ink-secondary)' }}>
-                Opt-in individual 5K Leaderboard — only Runners who turn on Speed Leaderboard in
-                their Home profile appear here.
-              </p>
-            </section>
+            <SpeedLeaderboardSubView />
           )}
         </div>
       </div>
