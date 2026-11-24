@@ -57,6 +57,8 @@ export function RaceDayTab({
     setHeaderRoundSlot,
     refreshSnapshot,
     submitLegMutation,
+    undoLegMutation,
+    dismissStaleOverrideToast,
   } = useEventData();
 
   const [nowMs, setNowMs] = useState<number>(() => Date.now());
@@ -180,12 +182,14 @@ export function RaceDayTab({
       const previousLegSnapshot: Leg = { ...leg };
       const prevTotalCompleted = snapshot.legs.filter((l) => l.status === 'completed').length;
 
+      const mutationId = generateMutationId();
+
       try {
         const { result } = await submitLegMutation(
           {
             eventId,
             legId: leg.id,
-            mutationId: generateMutationId(),
+            mutationId,
             status,
             startedAt,
             finishedAt,
@@ -199,6 +203,7 @@ export function RaceDayTab({
         );
 
         if (!result.applied && result.reason === 'stale_or_overridden') {
+          dismissStaleOverrideToast();
           setStatusNotice('Updated to latest Basecamp status');
           return;
         }
@@ -206,6 +211,7 @@ export function RaceDayTab({
         if (undoMessage) {
           setUndoToast({
             id: generateMutationId(),
+            mutationId,
             message: undoMessage,
             previousLegSnapshot,
           });
@@ -235,7 +241,15 @@ export function RaceDayTab({
         setBusyLegId(null);
       }
     },
-    [eventId, primaryCourse?.id, snapshot.legs, snapshot.participants, snapshot.teams, submitLegMutation],
+    [
+      dismissStaleOverrideToast,
+      eventId,
+      primaryCourse?.id,
+      snapshot.legs,
+      snapshot.participants,
+      snapshot.teams,
+      submitLegMutation,
+    ],
   );
 
   const handleStartLeg = useCallback(
@@ -314,24 +328,8 @@ export function RaceDayTab({
   const handleUndo = useCallback(
     async (toast: UndoToastState) => {
       setUndoing(true);
-      const prev = toast.previousLegSnapshot;
       try {
-        await submitLegMutation(
-          {
-            eventId,
-            legId: prev.id,
-            mutationId: generateMutationId(),
-            status: prev.status,
-            startedAt: prev.startedAt,
-            finishedAt: prev.finishedAt,
-            durationSeconds: prev.durationSeconds,
-            courseId: prev.courseId,
-            externalActivityUrl: prev.externalActivityUrl,
-            isExplicitRevert: true,
-            clientUpdatedAt: new Date(Date.now()).toISOString(),
-          },
-          { actionType: 'revert', previousLegSnapshot: prev },
-        );
+        await undoLegMutation(toast.mutationId, toast.previousLegSnapshot);
         // Cancel any queued milestone celebration since the Leg completion was reverted
         setMilestoneToast(null);
         setUndoToast(null);
@@ -339,7 +337,7 @@ export function RaceDayTab({
         setUndoing(false);
       }
     },
-    [eventId, submitLegMutation],
+    [undoLegMutation],
   );
 
   const handleStartRound = useCallback(

@@ -1,10 +1,20 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import type { EventApi } from '../../lib/eventApi';
-import type { EventSnapshot, GrantScope } from '../../types/domain';
+import {
+  EventAccessError,
+  type EventSnapshot,
+  type GrantScope,
+} from '../../types/domain';
 import { EventDataProvider, useEventData } from '../../state/EventDataContext';
 import { AppShell } from '../../components/AppShell';
 import { ParticipantPickerScreen } from '../participant/ParticipantPickerScreen';
+import {
+  getEventSnapshotBySlug,
+  getQueuedLegMutations,
+  saveEventSnapshot,
+  type QueuedLegMutation,
+} from '../offline/offlineDb';
 import { InviteGateScreen } from './InviteGateScreen';
 
 function UnlockedEventGate() {
@@ -19,6 +29,9 @@ interface UnlockedState {
   eventId: string;
   snapshot: EventSnapshot;
   grants: GrantScope[];
+  lastSyncedAt: string;
+  isOfflineSnapshot: boolean;
+  pendingQueue: QueuedLegMutation[];
 }
 
 function stripInviteCodeFromUrl(): string | null {
@@ -52,14 +65,47 @@ export function EventRoutePage({ eventApi }: { eventApi: EventApi }) {
   }
 
   const loadUnlockedEvent = useCallback(
-    async (eventId: string) => {
-      const [snapshot, grants] = await Promise.all([
+    async (eventId: string): Promise<UnlockedState> => {
+      const [snapshot, grants, pendingQueue] = await Promise.all([
         eventApi.getEventSnapshot(eventId),
         eventApi.getSessionGrants(eventId),
+        getQueuedLegMutations(eventId).catch(() => [] as QueuedLegMutation[]),
       ]);
-      return { eventId, snapshot, grants };
+      const lastSyncedAt = new Date().toISOString();
+      await saveEventSnapshot(snapshot, lastSyncedAt).catch(() => undefined);
+      return {
+        eventId,
+        snapshot,
+        grants,
+        lastSyncedAt,
+        isOfflineSnapshot: false,
+        pendingQueue,
+      };
     },
     [eventApi],
+  );
+
+  const tryHydrateOfflineSnapshot = useCallback(
+    async (eventSlug: string): Promise<UnlockedState | null> => {
+      try {
+        const cached = await getEventSnapshotBySlug(eventSlug);
+        if (!cached) return null;
+        const pendingQueue = await getQueuedLegMutations(cached.event_id).catch(
+          () => [] as QueuedLegMutation[],
+        );
+        return {
+          eventId: cached.event_id,
+          snapshot: cached.data,
+          grants: ['participant'],
+          lastSyncedAt: cached.last_synced_at,
+          isOfflineSnapshot: true,
+          pendingQueue,
+        };
+      } catch {
+        return null;
+      }
+    },
+    [],
   );
 
   useEffect(() => {
@@ -73,6 +119,21 @@ export function EventRoutePage({ eventApi }: { eventApi: EventApi }) {
       // Immediately strip ?code= from the browser URL bar before awaiting network calls
       const strippedCode = stripInviteCodeFromUrl();
       const pendingCode = strippedCode ?? capturedCodeRef.current?.code ?? null;
+
+      // Offline cold launch: hydrate immediately from IndexedDB event_snapshot + leg_mutation_queue
+      const navigatorOffline = typeof navigator !== 'undefined' && navigator.onLine === false;
+      if (navigatorOffline && pendingCode === null) {
+        const cachedState = await tryHydrateOfflineSnapshot(slug);
+        if (active) {
+          if (cachedState) {
+            setUnlocked(cachedState);
+          } else {
+            setGateError('You are offline and no saved Event view was found on this device yet.');
+          }
+          setChecking(false);
+        }
+        return;
+      }
 
       try {
         if (pendingCode !== null) {
@@ -94,6 +155,15 @@ export function EventRoutePage({ eventApi }: { eventApi: EventApi }) {
           }
         }
       } catch (err) {
+        // On non-auth network errors (lie-fi / captive portal), gracefully fall back to cached IndexedDB snapshot
+        if (pendingCode === null && !(err instanceof EventAccessError)) {
+          const cachedState = await tryHydrateOfflineSnapshot(slug);
+          if (active && cachedState) {
+            setUnlocked(cachedState);
+            return;
+          }
+        }
+
         if (active) {
           capturedCodeRef.current = { slug, code: null };
           setGateError(
@@ -113,7 +183,7 @@ export function EventRoutePage({ eventApi }: { eventApi: EventApi }) {
     return () => {
       active = false;
     };
-  }, [eventApi, slug, loadUnlockedEvent]);
+  }, [eventApi, slug, loadUnlockedEvent, tryHydrateOfflineSnapshot]);
 
   const handleManualUnlock = useCallback(
     async (code: string) => {
@@ -166,6 +236,9 @@ export function EventRoutePage({ eventApi }: { eventApi: EventApi }) {
       eventId={unlocked.eventId}
       initialSnapshot={unlocked.snapshot}
       initialGrants={unlocked.grants}
+      initialLastSyncedAt={unlocked.lastSyncedAt}
+      initialIsOfflineSnapshot={unlocked.isOfflineSnapshot}
+      initialPendingQueue={unlocked.pendingQueue}
     >
       <UnlockedEventGate />
     </EventDataProvider>

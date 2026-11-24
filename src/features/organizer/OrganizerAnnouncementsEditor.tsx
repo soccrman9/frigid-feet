@@ -352,13 +352,13 @@ export function OrganizerAnnouncementsEditor() {
                       <button
                         type="submit"
                         disabled={busy || !isOnline}
-                        className="pfl-focus-ring inline-flex min-h-[44px] flex-1 cursor-pointer items-center justify-center rounded-md border-0 px-3 text-sm font-bold"
+                        className="pfl-focus-ring inline-flex min-h-[44px] flex-1 cursor-pointer items-center justify-center rounded-md border-0 px-3 text-sm font-bold disabled:cursor-not-allowed disabled:opacity-65"
                         style={{
                           backgroundColor: 'var(--shell-header)',
                           color: 'var(--ink-on-shell)',
                         }}
                       >
-                        Save Changes
+                        {!isOnline ? 'Requires connection' : 'Save Changes'}
                       </button>
                       <button
                         type="button"

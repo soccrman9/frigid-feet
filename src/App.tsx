@@ -4,6 +4,7 @@ import type { EventApi } from './lib/eventApi';
 import { ThemeProvider } from './state/ThemeContext';
 import { EventRoutePage } from './features/gate/EventRoutePage';
 import { DashboardPage } from './features/dashboard/DashboardPage';
+import { getLatestEventSnapshot } from './features/offline/offlineDb';
 
 function ActiveEventRedirect({ eventApi }: { eventApi: EventApi }) {
   const [slug, setSlug] = useState<string | null>(null);
@@ -13,9 +14,22 @@ function ActiveEventRedirect({ eventApi }: { eventApi: EventApi }) {
     let active = true;
     async function lookup() {
       try {
+        const offline = typeof navigator !== 'undefined' && navigator.onLine === false;
+        if (offline) {
+          const cached = await getLatestEventSnapshot().catch(() => null);
+          if (active && cached) {
+            setSlug(cached.slug);
+          }
+          return;
+        }
         const activeSlug = await eventApi.getActiveEventSlug();
         if (active) {
           setSlug(activeSlug);
+        }
+      } catch {
+        const cached = await getLatestEventSnapshot().catch(() => null);
+        if (active && cached) {
+          setSlug(cached.slug);
         }
       } finally {
         if (active) {
