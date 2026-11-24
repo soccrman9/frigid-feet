@@ -392,6 +392,7 @@ export class InMemoryEventApi implements EventApi {
     const chipIns = isOrganizer
       ? Array.from(this.store.chipIns.values())
           .filter((c) => c.eventId === eventId)
+          .sort((a, b) => b.recordedAt.localeCompare(a.recordedAt))
           .map((c) => ({ ...c }))
       : [];
 
@@ -455,6 +456,7 @@ export class InMemoryEventApi implements EventApi {
     this.requireGrant(eventId, ['organizer']);
     return Array.from(this.store.chipIns.values())
       .filter((c) => c.eventId === eventId)
+      .sort((a, b) => b.recordedAt.localeCompare(a.recordedAt))
       .map((c) => ({ ...c }));
   }
 
@@ -881,8 +883,8 @@ export class InMemoryEventApi implements EventApi {
     data: Omit<ChipIn, 'id' | 'eventId' | 'recordedAt'>,
   ): Promise<ChipIn> {
     this.requireGrant(eventId, ['organizer']);
-    if (data.amountCents <= 0) {
-      throw new EventAccessError('VALIDATION_ERROR', 'amountCents must be positive.');
+    if (!Number.isInteger(data.amountCents) || data.amountCents <= 0) {
+      throw new EventAccessError('VALIDATION_ERROR', 'amountCents must be a positive integer.');
     }
     const record: ChipIn = {
       id: generateId(),
@@ -895,10 +897,35 @@ export class InMemoryEventApi implements EventApi {
     return { ...record };
   }
 
+  async updateChipIn(
+    eventId: string,
+    chipInId: string,
+    patch: Partial<Omit<ChipIn, 'id' | 'eventId' | 'recordedAt'>>,
+  ): Promise<ChipIn> {
+    this.requireGrant(eventId, ['organizer']);
+    const existing = this.store.chipIns.get(chipInId);
+    if (!existing || existing.eventId !== eventId) {
+      throw new EventAccessError('NOT_FOUND', 'Chip-in entry not found.');
+    }
+    if (
+      patch.amountCents !== undefined &&
+      (!Number.isInteger(patch.amountCents) || patch.amountCents <= 0)
+    ) {
+      throw new EventAccessError('VALIDATION_ERROR', 'amountCents must be a positive integer.');
+    }
+    const updated: ChipIn = { ...existing, ...patch };
+    this.store.chipIns.set(chipInId, updated);
+    this.store.notify(eventId);
+    return { ...updated };
+  }
+
   async deleteChipIn(eventId: string, chipInId: string): Promise<void> {
     this.requireGrant(eventId, ['organizer']);
-    this.store.chipIns.delete(chipInId);
-    this.store.notify(eventId);
+    const existing = this.store.chipIns.get(chipInId);
+    if (existing && existing.eventId === eventId) {
+      this.store.chipIns.delete(chipInId);
+      this.store.notify(eventId);
+    }
   }
 
   async createBadgeDefinition(
