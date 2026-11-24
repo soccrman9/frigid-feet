@@ -1,0 +1,120 @@
+@import "tailwindcss";
+
+:root,
+[data-theme="light"] {
+  --bg-ground: #f4f8fb;
+  --bg-surface: #ffffff;
+  --bg-rail: #e3edf5;
+  --bg-rail-subtle: #edf3f8;
+  --bg-out-row: #fffbf0;
+
+  --border-hairline: #c6d9e8;
+  --border-structural: #b8cfe0;
+  --border-strong: #8daac2;
+
+  --shell-header: #163a59;
+  --shell-dock: #0c1e30;
+  --shell-header-border: #0c1e30;
+
+  --ink-primary: #0c1e30;
+  --ink-secondary: #3b556e;
+  --ink-muted: #243b53;
+  --ink-on-shell: #ffffff;
+  --ink-on-shell-muted: #e3edf5;
+
+  --accent-amber: #c86d09;
+  --accent-amber-cta: #e08a1e;
+  --accent-amber-ink: #9a4d06;
+  --accent-amber-soft: #fef3c7;
+
+  --accent-spruce: #157a4b;
+  --accent-spruce-border: #0f5936;
+  --accent-spruce-soft: #dcfce7;
+
+  --accent-glacier: #7cc4fa;
+  --accent-error: #9b1c1c;
+  --accent-error-bg: #fef2f2;
+  --accent-error-border: #fca5a5;
+
+  --font-sans: 'IBM Plex Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+  color-scheme: light;
+}
+
+[data-theme="dark"] {
+  --bg-ground: #091522;
+  --bg-surface: #102438;
+  --bg-rail: #152e47;
+  --bg-rail-subtle: #0e2033;
+  --bg-out-row: #241e12;
+
+  --border-hairline: #234361;
+  --border-structural: #2d5478;
+  --border-strong: #4e789c;
+
+  --shell-header: #163a59;
+  --shell-dock: #08121e;
+  --shell-header-border: #2d5478;
+
+  --ink-primary: #f4f8fb;
+  --ink-secondary: #b8cfe0;
+  --ink-muted: #cfe1f0;
+  --ink-on-shell: #ffffff;
+  --ink-on-shell-muted: #e3edf5;
+
+  --accent-amber: #e08a1e;
+  --accent-amber-cta: #f09e32;
+  --accent-amber-ink: #f8be62;
+  --accent-amber-soft: #3b260c;
+
+  --accent-spruce: #2ea86c;
+  --accent-spruce-border: #1d7a4c;
+  --accent-spruce-soft: #0f3824;
+
+  --accent-glacier: #7cc4fa;
+  --accent-error: #fca5a5;
+  --accent-error-bg: #3b1214;
+  --accent-error-border: #9b1c1c;
+
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  background-color: var(--bg-ground);
+  color: var(--ink-primary);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+.font-telemetry {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.pfl-nav-active {
+  color: var(--ink-primary);
+  background-color: var(--bg-rail-subtle);
+  box-shadow: inset 0 3px 0 var(--shell-header);
+}
+
+[data-theme="dark"] .pfl-nav-active {
+  box-shadow: inset 0 3px 0 var(--accent-glacier);
+}
+
+.pfl-focus-ring:focus-visible {
+  outline: 2px solid var(--accent-glacier);
+  outline-offset: 2px;
+}
