@@ -10,12 +10,36 @@ import {
   type SetStateAction,
 } from 'react';
 import type { EventApi } from '../lib/eventApi';
-import type { EventSnapshot, GrantScope, Participant } from '../types/domain';
+import type {
+  ApplyLegMutationInput,
+  ApplyLegMutationResult,
+  EventSnapshot,
+  GrantScope,
+  Leg,
+  Participant,
+} from '../types/domain';
 import {
   clearSavedParticipantId,
   getSavedParticipantId,
   saveParticipantId,
 } from '../features/participant/participantStorage';
+
+export type LegMutationActionType = 'start' | 'finish' | 'mark_completed' | 'edit' | 'revert';
+
+export interface SubmitLegMutationMeta {
+  actionType: LegMutationActionType;
+  previousLegSnapshot: Leg;
+}
+
+export interface SubmitLegMutationOutcome {
+  result: ApplyLegMutationResult;
+  queuedOffline: boolean;
+}
+
+export type LegMutationHandler = (
+  input: ApplyLegMutationInput,
+  meta?: SubmitLegMutationMeta,
+) => Promise<SubmitLegMutationOutcome>;
 
 export interface EventDataContextValue {
   eventApi: EventApi;
@@ -40,6 +64,7 @@ export interface EventDataContextValue {
   refreshSnapshot: () => Promise<EventSnapshot>;
   refreshGrants: () => Promise<GrantScope[]>;
   setSnapshot: Dispatch<SetStateAction<EventSnapshot>>;
+  submitLegMutation: LegMutationHandler;
 }
 
 const EventDataContext = createContext<EventDataContextValue | null>(null);
@@ -49,6 +74,7 @@ interface EventDataProviderProps {
   eventId: string;
   initialSnapshot: EventSnapshot;
   initialGrants: GrantScope[];
+  legMutationHandler?: LegMutationHandler;
   children: ReactNode;
 }
 
@@ -57,6 +83,7 @@ export function EventDataProvider({
   eventId,
   initialSnapshot,
   initialGrants,
+  legMutationHandler,
   children,
 }: EventDataProviderProps) {
   const [snapshot, setSnapshot] = useState<EventSnapshot>(initialSnapshot);
@@ -145,6 +172,21 @@ export function EventDataProvider({
     return nextGrants;
   }, [eventApi, eventId]);
 
+  const submitLegMutation = useCallback<LegMutationHandler>(
+    async (input, meta) => {
+      if (legMutationHandler) {
+        return legMutationHandler(input, meta);
+      }
+      const result = await eventApi.applyLegMutation(input);
+      setSnapshot((prev) => ({
+        ...prev,
+        legs: prev.legs.map((leg) => (leg.id === result.leg.id ? result.leg : leg)),
+      }));
+      return { result, queuedOffline: false };
+    },
+    [eventApi, legMutationHandler],
+  );
+
   const unlockOrganizer = useCallback(
     async (passcode: string): Promise<boolean> => {
       const ok = await eventApi.unlockOrganizer(eventId, passcode);
@@ -164,7 +206,6 @@ export function EventDataProvider({
   }, []);
 
   const organizerUnlocked = grants.includes('organizer') && !organizerUiLocked;
-
   const value = useMemo<EventDataContextValue>(
     () => ({
       eventApi,
@@ -189,6 +230,7 @@ export function EventDataProvider({
       refreshSnapshot,
       refreshGrants,
       setSnapshot,
+      submitLegMutation,
     }),
     [
       eventApi,
@@ -208,6 +250,7 @@ export function EventDataProvider({
       headerStatusSlot,
       refreshSnapshot,
       refreshGrants,
+      submitLegMutation,
     ],
   );
 

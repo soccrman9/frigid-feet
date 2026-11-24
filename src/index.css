@@ -118,3 +118,53 @@ body,
   outline: 2px solid var(--accent-glacier);
   outline-offset: 2px;
 }
+
+/* Native <dialog> modal scroll containment (prevents page scroll chaining under modal) */
+dialog:modal {
+  overscroll-behavior: contain;
+}
+
+dialog::backdrop {
+  background: rgba(12, 30, 48, 0.58);
+  overflow: hidden;
+  overscroll-behavior: contain;
+}
+
+/* Native [popover="manual"] toast notifications with top-layer & fallback styling */
+[popover].pfl-toast-popover {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  overflow: visible;
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 160ms ease, transform 160ms ease, display 160ms ease, overlay 160ms ease;
+  transition-behavior: allow-discrete;
+}
+
+[popover].pfl-toast-popover:is(:popover-open, .\:popover-open) {
+  display: block;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@starting-style {
+  [popover].pfl-toast-popover:is(:popover-open, .\:popover-open) {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+@supports not selector(:popover-open) {
+  [popover].pfl-toast-popover:not(.\:popover-open) {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [popover].pfl-toast-popover {
+    transition: none;
+    transform: none;
+  }
+}
