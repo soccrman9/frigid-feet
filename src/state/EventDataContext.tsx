@@ -23,6 +23,9 @@ export interface EventDataContextValue {
   snapshot: EventSnapshot;
   grants: GrantScope[];
   isOrganizer: boolean;
+  organizerUnlocked: boolean;
+  unlockOrganizer: (passcode: string) => Promise<boolean>;
+  lockOrganizer: () => void;
   isOnline: boolean;
   refreshing: boolean;
   lastSyncedAt: string | null;
@@ -58,6 +61,7 @@ export function EventDataProvider({
 }: EventDataProviderProps) {
   const [snapshot, setSnapshot] = useState<EventSnapshot>(initialSnapshot);
   const [grants, setGrants] = useState<GrantScope[]>(initialGrants);
+  const [organizerUiLocked, setOrganizerUiLocked] = useState(false);
   const [activeParticipantId, setActiveParticipantId] = useState<string | null>(() =>
     getSavedParticipantId(eventId),
   );
@@ -78,6 +82,7 @@ export function EventDataProvider({
   }, [initialGrants]);
 
   useEffect(() => {
+    setOrganizerUiLocked(false);
     setActiveParticipantId(getSavedParticipantId(eventId));
   }, [eventId]);
 
@@ -140,13 +145,36 @@ export function EventDataProvider({
     return nextGrants;
   }, [eventApi, eventId]);
 
+  const unlockOrganizer = useCallback(
+    async (passcode: string): Promise<boolean> => {
+      const ok = await eventApi.unlockOrganizer(eventId, passcode);
+      if (!ok) {
+        return false;
+      }
+      setOrganizerUiLocked(false);
+      await refreshGrants();
+      await refreshSnapshot();
+      return true;
+    },
+    [eventApi, eventId, refreshGrants, refreshSnapshot],
+  );
+
+  const lockOrganizer = useCallback(() => {
+    setOrganizerUiLocked(true);
+  }, []);
+
+  const organizerUnlocked = grants.includes('organizer') && !organizerUiLocked;
+
   const value = useMemo<EventDataContextValue>(
     () => ({
       eventApi,
       eventId,
       snapshot,
       grants,
-      isOrganizer: grants.includes('organizer'),
+      isOrganizer: organizerUnlocked,
+      organizerUnlocked,
+      unlockOrganizer,
+      lockOrganizer,
       isOnline,
       refreshing,
       lastSyncedAt,
@@ -167,6 +195,9 @@ export function EventDataProvider({
       eventId,
       snapshot,
       grants,
+      organizerUnlocked,
+      unlockOrganizer,
+      lockOrganizer,
       isOnline,
       refreshing,
       lastSyncedAt,
