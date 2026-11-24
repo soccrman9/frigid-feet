@@ -1,0 +1,47 @@
+/* Polar Field Log Home disclosure accordion (modern native <details>/<summary>) */
+.pfl-course-help > summary {
+  list-style: none;
+  cursor: pointer;
+}
+
+.pfl-course-help > summary::-webkit-details-marker {
+  display: none;
+}
+
+.pfl-course-help > summary .pfl-chevron {
+  transition: transform 0.2s ease;
+}
+
+.pfl-course-help[open] > summary .pfl-chevron {
+  transform: rotate(90deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pfl-course-help > summary .pfl-chevron {
+    transition: none;
+  }
+}
+
+.pfl-course-help::details-content {
+  interpolate-size: allow-keywords;
+  overflow: clip;
+  contain: layout;
+}
+
+.pfl-course-help:not([open])::details-content {
+  block-size: 0;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .pfl-course-help::details-content {
+    transition: block-size 0.25s ease-in-out, content-visibility 0.25s allow-discrete;
+  }
+}
+
+/* Keep Leaflet attribution legible without overwhelming compact Course cards */
+.pfl-leaflet-container .leaflet-control-attribution {
+  font-size: 10px;
+  line-height: 1.3;
+  background: rgba(255, 255, 255, 0.88);
+  color: #0c1e30;
+}
