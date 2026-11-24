@@ -1,0 +1,34 @@
+name: Supabase Heartbeat
+
+on:
+  schedule:
+    # Run every 3 days at 06:00 UTC to keep the Supabase Free project active against the 7-day inactivity pause.
+    - cron: '0 6 */3 * *'
+  workflow_dispatch:
+
+jobs:
+  ping-heartbeat:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call ping_heartbeat RPC
+        env:
+          SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        run: |
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_ANON_KEY" ]; then
+            echo "Missing VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY repository secrets." >&2
+            exit 1
+          fi
+
+          response=$(curl --silent --show-error --fail-with-body \
+            -X POST "${SUPABASE_URL%/}/rest/v1/rpc/ping_heartbeat" \
+            -H "apikey: ${SUPABASE_ANON_KEY}" \
+            -H "Authorization: Bearer ${SUPABASE_ANON_KEY}" \
+            -H "Content-Type: application/json" \
+            -d '{}')
+
+          echo "Heartbeat response: ${response}"
+          if [ "$response" != "true" ]; then
+            echo "Unexpected ping_heartbeat response: ${response}" >&2
+            exit 1
+          fi
