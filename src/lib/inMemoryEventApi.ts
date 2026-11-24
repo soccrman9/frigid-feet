@@ -693,6 +693,9 @@ export class InMemoryEventApi implements EventApi {
   async applyLegMutation(input: ApplyLegMutationInput): Promise<ApplyLegMutationResult> {
     this.requireGrant(input.eventId, ['participant', 'organizer']);
     validateHttpsUrl(input.externalActivityUrl, 'externalActivityUrl');
+    if (input.durationSeconds !== null && input.durationSeconds <= 0) {
+      throw new EventAccessError('VALIDATION_ERROR', 'durationSeconds must be positive.');
+    }
 
     const current = this.store.legs.get(input.legId);
     if (!current || current.eventId !== input.eventId) {
