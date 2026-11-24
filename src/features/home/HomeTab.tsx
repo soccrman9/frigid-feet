@@ -1,4 +1,5 @@
 import { useEventData } from '../../state/EventDataContext';
+import { ParticipantProfileCard } from '../participant/ParticipantProfileCard';
 
 export function HomeTab() {
   const { snapshot } = useEventData();
@@ -6,6 +7,8 @@ export function HomeTab() {
 
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-3 p-3">
+      <ParticipantProfileCard />
+
       <section
         className="rounded-md border p-4"
         style={{
