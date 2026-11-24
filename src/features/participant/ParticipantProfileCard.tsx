@@ -614,8 +614,8 @@ export function ParticipantProfileCard() {
                   </p>
                   <p className="mt-1 text-xs leading-relaxed" style={{ color: 'var(--ink-muted)' }}>
                     Teams are Runner-only. Switching your RSVP away from Going (Runner) removes you
-                    from the Team and opens your scheduled Legs for teammates (completed Legs stay
-                    saved).
+                    from the Team — your future scheduled Legs will be unassigned while your
+                    completed Legs stay preserved.
                   </p>
                 </div>
               </div>
