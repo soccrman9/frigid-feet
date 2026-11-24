@@ -917,21 +917,26 @@ SECURITY DEFINER
 SET search_path = public, extensions
 AS $$
 DECLARE
+  v_started_at timestamptz := COALESCE(p_started_at, now());
   v_started_count int;
 BEGIN
   IF NOT public.has_grant(p_event_id, ARRAY['organizer']) THEN
     RAISE EXCEPTION 'Organizer permission required' USING ERRCODE = '42501';
   END IF;
 
+  IF p_round_number IS NULL OR p_round_number < 1 OR p_round_number > 10 THEN
+    RAISE EXCEPTION 'Round number must be between 1 and 10' USING ERRCODE = '22023';
+  END IF;
+
   UPDATE public.rounds
-  SET started_at = p_started_at
+  SET started_at = v_started_at
   WHERE event_id = p_event_id
     AND round_number = p_round_number;
 
   UPDATE public.legs
   SET status = 'out_on_course',
-      started_at = p_started_at,
-      client_updated_at = p_started_at,
+      started_at = v_started_at,
+      client_updated_at = v_started_at,
       updated_by_organizer = true
   WHERE event_id = p_event_id
     AND round_number = p_round_number

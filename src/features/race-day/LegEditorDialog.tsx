@@ -20,6 +20,7 @@ export interface LegEditorSavePayload {
 
 export interface LegEditorDialogProps {
   leg: Leg | null;
+  initialStatus?: LegStatus;
   runner: Participant | null;
   team: Team | null;
   courses: Course[];
@@ -51,6 +52,7 @@ function computeInitialDurationText(leg: Leg, targetStatus: LegStatus, nowMs: nu
 
 export function LegEditorDialog({
   leg,
+  initialStatus,
   runner,
   team,
   courses,
@@ -63,12 +65,13 @@ export function LegEditorDialog({
   const dialogRef = useRef<HTMLDialogElement | null>(null);
   const primaryCourse = getPrimaryCourse(courses);
 
-  const [status, setStatus] = useState<LegStatus>(leg?.status ?? 'scheduled');
+  const effectiveInitialStatus: LegStatus = initialStatus ?? leg?.status ?? 'scheduled';
+  const [status, setStatus] = useState<LegStatus>(effectiveInitialStatus);
   const [courseId, setCourseId] = useState<string>(
     leg?.courseId ?? primaryCourse?.id ?? '',
   );
   const [durationText, setDurationText] = useState<string>(
-    leg ? computeInitialDurationText(leg, leg.status, nowMs) : '',
+    leg ? computeInitialDurationText(leg, effectiveInitialStatus, nowMs) : '',
   );
   const [activityUrl, setActivityUrl] = useState<string>(leg?.externalActivityUrl ?? '');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -79,14 +82,15 @@ export function LegEditorDialog({
 
   useEffect(() => {
     if (!leg) return;
-    setStatus(leg.status);
+    const nextStatus = initialStatus ?? leg.status;
+    setStatus(nextStatus);
     setCourseId(leg.courseId ?? primaryCourse?.id ?? '');
-    setDurationText(computeInitialDurationText(leg, leg.status, nowMsRef.current));
+    setDurationText(computeInitialDurationText(leg, nextStatus, nowMsRef.current));
     setActivityUrl(leg.externalActivityUrl ?? '');
     setErrorMessage(null);
-    // Re-initialize form only when opening a different Leg
+    // Re-initialize form only when opening a different Leg or initialStatus mode
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [legId]);
+  }, [legId, initialStatus]);
 
   useEffect(() => {
     const dialog = dialogRef.current;
