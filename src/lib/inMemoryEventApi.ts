@@ -21,6 +21,7 @@ import {
   type SupplyItem,
   type Team,
 } from '../types/domain';
+import { toSafeHttpsUrl } from '../features/home/urlSafety';
 import type { EventApi, Unsubscribe } from './eventApi';
 
 interface StoredSecrets {
@@ -40,10 +41,10 @@ function generateId(): string {
 
 function validateHttpsUrl(url: string | null | undefined, fieldName: string): void {
   if (url == null) return;
-  if (!url.startsWith('https://') || url.length > 500) {
+  if (!toSafeHttpsUrl(url)) {
     throw new EventAccessError(
       'VALIDATION_ERROR',
-      `${fieldName} must start with https:// and be 500 characters or fewer.`,
+      `${fieldName} must be a valid https:// URL of 500 characters or fewer.`,
     );
   }
 }
@@ -691,6 +692,9 @@ export class InMemoryEventApi implements EventApi {
   async applyLegMutation(input: ApplyLegMutationInput): Promise<ApplyLegMutationResult> {
     this.requireGrant(input.eventId, ['participant', 'organizer']);
     validateHttpsUrl(input.externalActivityUrl, 'externalActivityUrl');
+    if (input.durationSeconds !== null && input.durationSeconds <= 0) {
+      throw new EventAccessError('VALIDATION_ERROR', 'durationSeconds must be positive.');
+    }
 
     const current = this.store.legs.get(input.legId);
     if (!current || current.eventId !== input.eventId) {
