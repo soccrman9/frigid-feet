@@ -1,0 +1,258 @@
+{
+  "title": "Choose the visual direction for Frigid Feet 50K",
+  "question": "The roll assigned Polar Field Log for the mobile app. Compare it with Impeccable's Pick, the competitive Crouwel Grid challenger, or the category standard — or re-roll.",
+  "options": [
+    {
+      "id": "assigned",
+      "kind": "assigned",
+      "label": "Polar Field Log",
+      "kicker": "THE ROLL",
+      "lineage": "Arctic research station field logs & polar hydrographic charts",
+      "thesis": "Daylight-legible polar expedition precision: crisp ice-sheet grounds, deep navy ink, and a live collective distance transect.",
+      "palette": [
+        "#F4F8FB",
+        "#0C1E30",
+        "#163A59",
+        "#E3EDF5",
+        "#C86D09",
+        "#157A4B"
+      ],
+      "materials": [
+        "matte snow-white paper",
+        "hairline bathymetric rules",
+        "tabular expedition telemetry"
+      ],
+      "viewport": "Top polar-navy shell with collective km distance transect (0-25-50-100 KM), 10-Round pill rail, chronological Runner lineup with right-aligned ETA bars, and a 52px gloved-thumb Finish/Start dock above 4-tab nav.",
+      "risk": "Can feel slightly scientific if copy and celebratory milestone moments aren't kept warm and friendly.",
+      "raised": [
+        {
+          "from": "challenger-exposure",
+          "raise": "Non-color tonal/pattern steps on every Leg state so sunlight glare never obscures status."
+        },
+        {
+          "from": "challenger-jcard",
+          "raise": "Right-aligned tabular elapsed time and ETA column for effortless mid-stride vertical scanning."
+        },
+        {
+          "from": "challenger-centrerail",
+          "raise": "Crisp 1px geometric state detents on Round pills and 10-segment Team bars instead of soft shadows."
+        },
+        {
+          "from": "challenger-labanotation",
+          "raise": "Compact proportional ETA progress bar inside each Out-on-Course Runner row."
+        },
+        {
+          "from": "challenger-streaming",
+          "raise": "High-salience active Round and sticky bottom thumb dock while completed/future Rounds step back."
+        }
+      ],
+      "html": ".impeccable/mocks/decision/assigned.html",
+      "htmlFrame": "390x844",
+      "comp": ".impeccable/mocks/decision/assigned.png"
+    },
+    {
+      "id": "model-pick",
+      "kind": "pick",
+      "label": "Nordic Trail Wayfinding",
+      "kicker": "IMPECCABLE'S PICK",
+      "lineage": "Scandinavian cross-country ski trail (løype) signage & kilometer posts",
+      "thesis": "Unmistakable winter trail clarity: cobalt-blue signage bands, snow-white cards, and numbered kilometer-post Round markers.",
+      "palette": [
+        "#F7FAFC",
+        "#0F2230",
+        "#1254A1",
+        "#EAF1F7",
+        "#D97706",
+        "#15803D"
+      ],
+      "materials": [
+        "enamel trail-sign cobalt",
+        "high-contrast snow ground",
+        "trail-blaze amber callouts"
+      ],
+      "viewport": "Cobalt signage header with collective km counter, numbered ski-post Round rail (R1-R10), crisp Runner status cards, and a high-vis bottom thumb dock anchored above the 4-tab bar.",
+      "risk": "Also the direction most winter-outdoor runs land on — super effective, less unexpected.",
+      "html": ".impeccable/mocks/decision/model-pick.html",
+      "htmlFrame": "390x844",
+      "comp": ".impeccable/mocks/decision/model-pick.png"
+    },
+    {
+      "id": "challenger-crouwel",
+      "kind": "challenger",
+      "catalogId": "crouwel-grid-specimen",
+      "label": "Glacier Grid Specimen",
+      "verdict": "competitive",
+      "lineage": "Wim Crouwel gridded type specimens fused for winter outdoor telemetry",
+      "thesis": "Ultra-crisp daylight typography on a faint ice-blue construction grid where monumental Round numbers and modular 50K cells read at arm's length.",
+      "palette": [
+        "#FFFFFF",
+        "#0D131A",
+        "#0F52BA",
+        "#D6E4F0",
+        "#C96A0A"
+      ],
+      "materials": [
+        "stark white sheet",
+        "1px ice-blue gridlines",
+        "monumental modular numerals"
+      ],
+      "viewport": "Stark white viewport ruled by faint ice-blue gridlines, oversized tabular Round & km display, crisp modular Runner rows, and a bold cobalt primary action dock.",
+      "case": "Holds product clarity strongly — huge high-contrast numerals excel in bright winter sun — while feeling more Swiss graphic design than cozy winter friend relay.",
+      "risk": "Can feel stark or architectural if spacing and playful Badge accents are too rigid.",
+      "html": ".impeccable/mocks/decision/challenger-crouwel.html",
+      "htmlFrame": "390x844",
+      "comp": ".impeccable/mocks/decision/challenger-crouwel.png",
+      "hero": "https://impeccable.style/worlds/cards/crouwel-grid-specimen-hero.webp",
+      "board": "https://impeccable.style/worlds/cards/crouwel-grid-specimen.webp"
+    },
+    {
+      "id": "challenger-exposure",
+      "kind": "challenger",
+      "catalogId": "operate-b-exposure-record-zone-sheets",
+      "label": "Exposure Record Zone Sheets",
+      "verdict": "declined",
+      "lineage": "Darkroom printer exposure records & eleven-step zone ramps",
+      "thesis": "Overlapping translucent zone sheets with hatched density marks.",
+      "palette": [
+        "#1A1D21",
+        "#E5E7EB",
+        "#D946EF"
+      ],
+      "materials": [
+        "backlit zone ramp",
+        "cross-hatch film"
+      ],
+      "viewport": "Layered translucent darkroom cards with hatched load overlays.",
+      "case": "Darkroom translucency and cross-hatching hurt winter sunlight readability and miss the warm friend-relay vibe.",
+      "risk": "Unreadable in glare and visually noisy while jogging.",
+      "kept": "Non-color tonal and pattern differentiation on every Leg state.",
+      "hero": "https://impeccable.style/worlds/cards/operate-b-exposure-record-zone-sheets-hero.webp"
+    },
+    {
+      "id": "challenger-jcard",
+      "kind": "challenger",
+      "catalogId": "vernacular-ephemera-cassette-j-card",
+      "label": "Cassette J-Card",
+      "verdict": "declined",
+      "lineage": "Hand-lettered mixtape inlays ruled in ballpoint",
+      "thesis": "Side A / Side B ruled tracklists timed to forty-five minutes.",
+      "palette": [
+        "#FFFFFF",
+        "#1E40AF",
+        "#DC2626"
+      ],
+      "materials": [
+        "lined inlay stock",
+        "ballpoint ink"
+      ],
+      "viewport": "Ruled handwritten tracklist split into two folded halves.",
+      "case": "Handwritten nostalgia and two-side tape splits clash with a clean modern 10-Round outdoor app.",
+      "risk": "Feels kitschy and cramped on a 390px phone screen.",
+      "kept": "Right-aligned tabular elapsed time and ETA rhythm.",
+      "hero": "https://impeccable.style/worlds/cards/vernacular-ephemera-cassette-j-card-hero.webp"
+    },
+    {
+      "id": "challenger-centrerail",
+      "kind": "challenger",
+      "catalogId": "rw-centre-rail-reference-setting",
+      "label": "Centre-Rail Reference Setting",
+      "verdict": "declined",
+      "lineage": "Wide-margin print reference editions with a central key rail",
+      "thesis": "Two narrow serif columns flanking a hairline vermilion key rail.",
+      "palette": [
+        "#F5F0E6",
+        "#18181B",
+        "#C83228"
+      ],
+      "materials": [
+        "unbleached bone paper",
+        "1px iron-black rules"
+      ],
+      "viewport": "Twin narrow columns of roman serif with outboard marginalia.",
+      "case": "Warm bone paper and dense bookish columns miss both the crisp winter atmosphere and mid-run glanceability.",
+      "risk": "Too literary and fragile for gloved thumbs in bright sun.",
+      "kept": "Crisp 1px geometric state detents on Round pills and Team bars.",
+      "hero": "https://impeccable.style/worlds/cards/rw-centre-rail-reference-setting-hero.webp"
+    },
+    {
+      "id": "challenger-labanotation",
+      "kind": "challenger",
+      "catalogId": "notation-diagram-systems-labanotation",
+      "label": "Labanotation Score",
+      "verdict": "declined",
+      "lineage": "Vertical bilateral dance notation scores read bottom-to-top",
+      "thesis": "A vertical center staff where block shape is direction and length is duration.",
+      "palette": [
+        "#FFFFFF",
+        "#111827",
+        "#CBD5E1"
+      ],
+      "materials": [
+        "score paper",
+        "shaded duration blocks"
+      ],
+      "viewport": "Bilateral vertical staff flowing upward with shaded movement blocks.",
+      "case": "Bottom-to-top bilateral notation creates cognitive friction for a runner checking a phone mid-5K.",
+      "risk": "Unfamiliar reading direction breaks instant comprehension.",
+      "kept": "Proportional ETA progress bars inside active Runner rows.",
+      "hero": "https://impeccable.style/worlds/cards/notation-diagram-systems-labanotation-hero.webp"
+    },
+    {
+      "id": "challenger-streaming",
+      "kind": "challenger",
+      "catalogId": "pop-culture-shelf-streaming-title-card-wall",
+      "label": "Streaming Title Card Wall",
+      "verdict": "declined",
+      "lineage": "Dark horizontal poster shelves with focus-expanding tiles",
+      "thesis": "Horizontal poster rows where focused tiles expand and neighbors dim.",
+      "palette": [
+        "#0F1115",
+        "#F8FAFC",
+        "#38BDF8"
+      ],
+      "materials": [
+        "dark theater ground",
+        "full-bleed poster tiles"
+      ],
+      "viewport": "Dark horizontal carousels hiding metadata until focused.",
+      "case": "Dark ground washes out in winter sun and hiding metadata behind focus interactions slows down race-day check-ins.",
+      "risk": "Poor sunlight legibility and horizontal-scroll fatigue.",
+      "kept": "Clear active-focus salience for the current Round and sticky thumb dock.",
+      "hero": "https://impeccable.style/worlds/cards/pop-culture-shelf-streaming-title-card-wall-hero.webp"
+    }
+  ],
+  "reroll": {
+    "registers": [
+      "safer",
+      "bolder"
+    ]
+  },
+  "buildPath": {
+    "value": "code",
+    "toggle": true
+  },
+  "canon": true,
+  "canonCard": {
+    "kind": "canon",
+    "label": "The Category Standard",
+    "thesis": "Clean, modern fitness utility: bright white surface, crisp slate typography, cool blue primary action, zero visual risk.",
+    "palette": [
+      "#FFFFFF",
+      "#0F172A",
+      "#2563EB",
+      "#F1F5F9",
+      "#D97706"
+    ],
+    "materials": [
+      "clean white cards",
+      "subtle slate borders",
+      "standard iOS/web controls"
+    ],
+    "viewport": "Familiar top app bar, horizontal Round pills, clean white Runner cards, and a full-width blue primary CTA dock above 4-tab nav.",
+    "risk": "Immediately familiar, but indistinguishable from any generic running utility.",
+    "html": ".impeccable/mocks/decision/canon.html",
+    "htmlFrame": "390x844",
+    "comp": ".impeccable/mocks/decision/canon.png"
+  },
+  "steer": true
+}

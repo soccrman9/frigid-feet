@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=390, initial-scale=1" />
+<title>Glacier Grid Specimen — Frigid Feet 50K</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;800;900&family=IBM+Plex+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    width: 390px; height: 844px; overflow: hidden; background: #FFFFFF; color: #0D131A;
+    font-family: 'Archivo', system-ui, sans-serif;
+    background-image: linear-gradient(to right, #E2EEF7 1px, transparent 1px), linear-gradient(to bottom, #E2EEF7 1px, transparent 1px);
+    background-size: 26px 26px;
+  }
+  .shell { display: flex; flex-direction: column; height: 844px; }
+  .head { padding: 14px 16px 12px; border-bottom: 2px solid #0D131A; background: rgba(255,255,255,0.92); }
+  .kicker { font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #0F52BA; display: flex; justify-content: space-between; }
+  .hero-num { display: flex; align-items: baseline; justify-content: space-between; margin-top: 6px; }
+  .big-r { font-size: 40px; font-weight: 900; line-height: 0.95; letter-spacing: -0.04em; color: #0D131A; }
+  .big-km { text-align: right; }
+  .big-km strong { display: block; font-size: 26px; font-weight: 900; color: #0F52BA; line-height: 1; }
+  .big-km span { font-family: 'IBM Plex Mono', monospace; font-size: 10px; font-weight: 700; color: #3D5266; text-transform: uppercase; }
+  .grid-rail { display: grid; grid-template-columns: repeat(7, 1fr); border-bottom: 2px solid #0D131A; background: #FFFFFF; }
+  .cell { text-align: center; padding: 9px 0; font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 700; border-right: 1px solid #C6DAEC; color: #4A6075; }
+  .cell:last-child { border-right: 0; }
+  .cell.done { background: #EAF6EE; color: #115E34; }
+  .cell.now { background: #0F52BA; color: #FFFFFF; }
+  .body { flex: 1; padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; overflow: hidden; }
+  .sec { font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #0D131A; display: flex; justify-content: space-between; }
+  .row { background: #FFFFFF; border: 2px solid #0D131A; padding: 10px 12px; display: flex; justify-content: space-between; align-items: center; }
+  .row.out { border-left: 8px solid #C96A0A; }
+  .name { font-size: 16px; font-weight: 800; }
+  .sub { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #3D5266; margin-top: 3px; }
+  .metric { text-align: right; font-family: 'IBM Plex Mono', monospace; }
+  .metric strong { display: block; font-size: 17px; font-weight: 700; color: #C96A0A; }
+  .metric span { font-size: 10px; font-weight: 700; color: #3D5266; }
+  .team-box { background: #FFFFFF; border: 1.5px solid #0D131A; padding: 10px 12px; }
+  .t-row { display: flex; justify-content: space-between; font-size: 14px; font-weight: 800; margin-bottom: 6px; }
+  .cells10 { display: grid; grid-template-columns: repeat(10, 1fr); border: 1.5px solid #0D131A; }
+  .c { height: 11px; border-right: 1px solid #0D131A; background: #FFFFFF; }
+  .c:last-child { border-right: 0; }
+  .c.done { background: #0F52BA; }
+  .c.out { background: #C96A0A; }
+  .dock { background: #0F52BA; color: #FFFFFF; padding: 12px 14px; border-top: 2px solid #0D131A; }
+  .dock-top { display: flex; justify-content: space-between; font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 700; margin-bottom: 8px; color: #DCE9FA; }
+  .btn { width: 100%; height: 52px; background: #FFFFFF; color: #0D131A; border: 2px solid #0D131A; font-size: 17px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.03em; display: flex; align-items: center; justify-content: center; }
+  .nav { display: grid; grid-template-columns: repeat(4, 1fr); height: 56px; background: #FFFFFF; border-top: 2px solid #0D131A; }
+  .tab { display: flex; align-items: center; justify-content: center; font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 700; text-transform: uppercase; border-right: 1px solid #C6DAEC; color: #4A6075; }
+  .tab.on { background: #0D131A; color: #FFFFFF; }
+</style>
+</head>
+<body>
+<div class="shell">
+  <header class="head">
+    <div class="kicker"><span>FRIGID FEET 50K</span><span>11:24 AM</span></div>
+    <div class="hero-num">
+      <div class="big-r">R04<span style="font-size:18px;color:#5B748C">/10</span></div>
+      <div class="big-km"><strong>95.0 KM</strong><span>Collective Total</span></div>
+    </div>
+  </header>
+
+  <div class="grid-rail">
+    <div class="cell done">01</div>
+    <div class="cell done">02</div>
+    <div class="cell done">03</div>
+    <div class="cell now">04</div>
+    <div class="cell">05</div>
+    <div class="cell">06</div>
+    <div class="cell">07</div>
+  </div>
+
+  <main class="body">
+    <div class="sec"><span>Active Runners</span><span style="color:#C96A0A">2 ON COURSE</span></div>
+
+    <div class="row out">
+      <div><div class="name">Maya Chen</div><div class="sub">FROSTBITE FIGHTERS · BOARDWALK</div></div>
+      <div class="metric"><strong>24:18</strong><span>ETA 11:32</span></div>
+    </div>
+
+    <div class="row out">
+      <div><div class="name">Samir Patel</div><div class="sub">COLD BREW CREW · LAKE LOOP</div></div>
+      <div class="metric"><strong>24:18</strong><span>ETA 11:36</span></div>
+    </div>
+
+    <div class="row">
+      <div><div class="name">Jordan Lee</div><div class="sub">SNOW PATROL · BOARDWALK</div></div>
+      <div class="metric"><strong style="color:#115E34">DONE</strong><span>11:21 AM</span></div>
+    </div>
+
+    <div class="sec" style="margin-top:4px"><span>Team 50K Grid</span><span>ALPHABETICAL</span></div>
+
+    <div class="team-box">
+      <div class="t-row"><span>Cold Brew Crew</span><span style="color:#0F52BA">15/50 KM</span></div>
+      <div class="cells10">
+        <div class="c done"></div><div class="c done"></div><div class="c done"></div><div class="c out"></div>
+        <div class="c"></div><div class="c"></div><div class="c"></div><div class="c"></div><div class="c"></div><div class="c"></div>
+      </div>
+    </div>
+
+    <div class="team-box">
+      <div class="t-row"><span>Frostbite Fighters</span><span style="color:#0F52BA">20/50 KM</span></div>
+      <div class="cells10">
+        <div class="c done"></div><div class="c done"></div><div class="c done"></div><div class="c done"></div>
+        <div class="c"></div><div class="c"></div><div class="c"></div><div class="c"></div><div class="c"></div><div class="c"></div>
+      </div>
+    </div>
+  </main>
+
+  <section class="dock">
+    <div class="dock-top"><span>MY LEG · R04 BOARDWALK 5K</span><span>ELAPSED 24:18</span></div>
+    <div class="btn">FINISH 5K LEG</div>
+  </section>
+
+  <nav class="nav">
+    <div class="tab">Home</div>
+    <div class="tab">Teams</div>
+    <div class="tab on">Race</div>
+    <div class="tab">Supply</div>
+  </nav>
+</div>
+</body>
+</html>

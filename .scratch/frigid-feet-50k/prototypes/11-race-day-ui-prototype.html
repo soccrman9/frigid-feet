@@ -1,0 +1,2127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Frigid Feet 50K — Race-Day UI Prototype</title>
+  <!--
+    THROWAWAY UI PROTOTYPE (Wayfinder Ticket 11)
+    Plan: Three structurally different variants (A, B, C) for both the Mobile Race-Day View
+    and the Basecamp Dashboard (TV/Laptop), switchable via ?surface=mobile|dashboard&variant=A|B|C
+    and the floating bottom bar. State is in-memory only; double-click to open in any browser.
+  -->
+  <style>
+    /* ===== Reset & Modern Base ===== */
+    *, *::before, *::after { box-sizing: border-box; }
+
+    :root {
+      --target-size: 24px;
+      --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      --font-mono: ui-monospace, "Cascadia Code", "Source Code Pro", Menlo, Consolas, monospace;
+      --switcher-clearance: 5.5rem;
+    }
+
+    @media (pointer: coarse) {
+      :root { --target-size: 44px; }
+    }
+
+    html {
+      font-family: var(--font-sans);
+      line-height: 1.45;
+      scroll-padding-bottom: calc(var(--switcher-clearance) + env(safe-area-inset-bottom, 0px));
+    }
+
+    body {
+      margin: 0;
+      min-block-size: 100dvh;
+      overflow-wrap: break-word;
+      padding-bottom: calc(var(--switcher-clearance) + env(safe-area-inset-bottom, 0px));
+      background: #e2e8f0;
+      color: #0f172a;
+    }
+
+    h1, h2, h3 { text-wrap: balance; margin: 0; }
+    p, li { text-wrap: pretty; margin: 0; }
+    :where(a, code) { overflow-wrap: anywhere; }
+
+    :where(button, select, input:not([type="checkbox"], [type="radio"]), label:has(input[type="checkbox"], input[type="radio"])) {
+      min-block-size: var(--target-size);
+      min-inline-size: var(--target-size);
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+      border: 1px solid transparent;
+      border-radius: 0.625rem;
+      background: transparent;
+      color: inherit;
+    }
+
+    :where(button, a, select, input, [tabindex]):focus-visible {
+      outline: 3px solid #2563eb;
+      outline-offset: 2px;
+    }
+
+    .visually-hidden:where(:not(:focus-within, :active)) {
+      position: absolute !important;
+      clip-path: inset(50%) !important;
+      overflow: hidden !important;
+      width: 1px !important;
+      height: 1px !important;
+      margin: -1px !important;
+      padding: 0 !important;
+      border: 0 !important;
+      white-space: nowrap !important;
+    }
+
+    /* ===== Prototype Wrapper & Demo Bar ===== */
+    .proto-banner {
+      background: #0f172a;
+      color: #f8fafc;
+      padding: 0.5rem 1rem;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      font-size: 0.875rem;
+      border-bottom: 1px solid #334155;
+    }
+
+    .proto-banner__tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      font-size: 0.75rem;
+      color: #fbbf24;
+    }
+
+    .proto-controls {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .proto-btn {
+      background: #1e293b;
+      color: #f8fafc;
+      border: 1px solid #475569;
+      padding: 0.3rem 0.65rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      border-radius: 0.45rem;
+    }
+    .proto-btn:hover { background: #334155; }
+    .proto-btn[aria-pressed="true"] {
+      background: #0284c7;
+      border-color: #38bdf8;
+      color: #ffffff;
+    }
+
+    /* ===== Mobile Phone Stage (when viewing mobile surface on desktop) ===== */
+    .mobile-stage {
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 1.25rem 0.75rem 2rem;
+    }
+
+    .phone-frame {
+      inline-size: min(100%, 412px);
+      min-block-size: 760px;
+      border-radius: 1.75rem;
+      border: 6px solid #1e293b;
+      box-shadow: 0 20px 50px rgba(15, 23, 42, 0.25);
+      overflow: clip;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      container: phone / inline-size;
+    }
+
+    @media (max-width: 460px) {
+      .mobile-stage { padding: 0; }
+      .phone-frame {
+        inline-size: 100%;
+        min-block-size: calc(100dvh - 3rem);
+        border: 0;
+        border-radius: 0;
+        box-shadow: none;
+      }
+    }
+
+    /* ===== Mobile Variant A: Action-First Glove-Friendly Hero Stack ===== */
+    .mob-a {
+      color-scheme: light;
+      background: #f1f5f9;
+      color: #0f172a;
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+    }
+    .mob-a .m-top {
+      background: #0f172a;
+      color: #ffffff;
+      padding: 1rem 1rem 0.9rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .mob-a .m-top h1 { font-size: 1.05rem; font-weight: 800; letter-spacing: -0.01em; }
+    .mob-a .m-round-pill {
+      background: #0284c7;
+      color: #ffffff;
+      padding: 0.25rem 0.65rem;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .mob-a .m-body {
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      flex: 1;
+    }
+    .mob-a .hero-card {
+      background: #ffffff;
+      border: 2px solid #0f172a;
+      border-radius: 1rem;
+      padding: 1.15rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+      box-shadow: 0 4px 0 #0f172a;
+    }
+    .mob-a .hero-kicker {
+      font-size: 0.78rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #0369a1;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .mob-a .hero-title { font-size: 1.5rem; font-weight: 900; line-height: 1.15; }
+    .mob-a .hero-meta { font-size: 0.95rem; color: #334155; }
+    .mob-a .big-cta {
+      min-block-size: 56px;
+      width: 100%;
+      background: #ea580c;
+      color: #ffffff;
+      font-size: 1.15rem;
+      font-weight: 800;
+      border-radius: 0.85rem;
+      border: 2px solid #9a3412;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+    .mob-a .big-cta:hover { background: #c2410c; }
+    .mob-a .big-cta--finish {
+      background: #15803d;
+      border-color: #14532d;
+    }
+    .mob-a .big-cta--finish:hover { background: #166534; }
+    .mob-a .big-cta--secondary {
+      background: #e2e8f0;
+      color: #0f172a;
+      border-color: #64748b;
+      min-block-size: 46px;
+      font-size: 0.95rem;
+    }
+    .mob-a .course-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      border-radius: 0.6rem;
+      padding: 0.5rem 0.75rem;
+      font-size: 0.88rem;
+    }
+    .mob-a .course-row select {
+      border: 1px solid #64748b;
+      border-radius: 0.45rem;
+      padding: 0.25rem 0.5rem;
+      background: #ffffff;
+      color: #0f172a;
+      font-weight: 600;
+    }
+    .mob-a .section-card {
+      background: #ffffff;
+      border: 1px solid #94a3b8;
+      border-radius: 0.9rem;
+      padding: 0.95rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.65rem;
+    }
+    .mob-a .section-card h2 { font-size: 0.95rem; font-weight: 800; color: #0f172a; }
+
+    /* ===== Mobile Variant B: Round Timeline + Sticky Thumb Action Dock ===== */
+    .mob-b {
+      color-scheme: light;
+      background: #faf8f5;
+      color: #1c1917;
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+    }
+    .mob-b .m-top {
+      background: #14532d;
+      color: #f0fdf4;
+      padding: 0.85rem 1rem;
+    }
+    .mob-b .m-top-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 0.5rem;
+    }
+    .mob-b .m-top h1 { font-size: 1rem; font-weight: 800; }
+    .mob-b .m-collective {
+      margin-top: 0.35rem;
+      font-size: 0.85rem;
+      color: #bbf7d0;
+      font-weight: 600;
+    }
+    .mob-b .round-rail {
+      display: flex;
+      gap: 0.35rem;
+      overflow-x: auto;
+      padding: 0.65rem 0.85rem;
+      background: #f5f0e6;
+      border-bottom: 1px solid #d6cbb8;
+    }
+    .mob-b .round-chip {
+      flex: 0 0 auto;
+      min-block-size: 38px;
+      padding: 0.3rem 0.6rem;
+      border-radius: 0.55rem;
+      font-size: 0.78rem;
+      font-weight: 700;
+      border: 1px solid #a8a29e;
+      background: #ffffff;
+      color: #44403c;
+    }
+    .mob-b .round-chip--done { background: #dcfce7; border-color: #15803d; color: #14532d; }
+    .mob-b .round-chip--live { background: #b45309; border-color: #78350f; color: #ffffff; }
+    .mob-b .round-chip--selected { box-shadow: 0 0 0 2px #1c1917; }
+    .mob-b .m-body {
+      padding: 0.9rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.9rem;
+      flex: 1;
+    }
+    .mob-b .timeline-block {
+      border-left: 4px solid #15803d;
+      padding-left: 0.75rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+    }
+    .mob-b .timeline-block h2 { font-size: 0.95rem; font-weight: 800; color: #14532d; }
+    .mob-b .runner-row {
+      background: #ffffff;
+      border: 1px solid #d6d3d1;
+      border-radius: 0.75rem;
+      padding: 0.7rem 0.8rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.6rem;
+    }
+    .mob-b .sticky-dock {
+      position: sticky;
+      bottom: 0;
+      background: #1c1917;
+      color: #fafaf9;
+      padding: 0.75rem 0.9rem;
+      border-top: 2px solid #d97706;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+    }
+    .mob-b .dock-btn {
+      background: #d97706;
+      color: #ffffff;
+      font-weight: 800;
+      padding: 0.65rem 1rem;
+      min-block-size: 48px;
+      border-radius: 0.65rem;
+      white-space: nowrap;
+    }
+    .mob-b .dock-btn:hover { background: #b45309; }
+
+    /* ===== Mobile Variant C: Team-First Dark Outdoor Matrix ===== */
+    .mob-c {
+      color-scheme: dark;
+      background: #0b1120;
+      color: #f8fafc;
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+    }
+    .mob-c .m-top {
+      background: #111827;
+      padding: 0.9rem 1rem;
+      border-bottom: 1px solid #334155;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .mob-c .m-top h1 { font-size: 1rem; font-weight: 800; color: #38bdf8; }
+    .mob-c .m-body {
+      padding: 0.9rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.9rem;
+      flex: 1;
+    }
+    .mob-c .matrix-card {
+      background: #1e293b;
+      border: 1px solid #475569;
+      border-radius: 0.9rem;
+      padding: 0.9rem;
+    }
+    .mob-c .round-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.5rem;
+      margin-top: 0.7rem;
+    }
+    .mob-c .round-cell {
+      background: #0f172a;
+      border: 1px solid #475569;
+      border-radius: 0.6rem;
+      padding: 0.55rem 0.65rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+      font-size: 0.8rem;
+    }
+    .mob-c .round-cell--done { border-color: #22c55e; background: #052e16; }
+    .mob-c .round-cell--out { border-color: #38bdf8; background: #0c4a6e; }
+    .mob-c .round-cell--next { border-color: #fbbf24; background: #451a03; }
+    .mob-c .cell-btn {
+      margin-top: 0.3rem;
+      background: #38bdf8;
+      color: #082f49;
+      font-weight: 800;
+      font-size: 0.78rem;
+      padding: 0.35rem 0.5rem;
+      min-block-size: 36px;
+      border-radius: 0.45rem;
+    }
+    .mob-c .cell-btn--finish { background: #4ade80; color: #052e16; }
+
+    /* Shared Mobile Elements */
+    .m-tabs {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      border-top: 1px solid #94a3b8;
+      background: #ffffff;
+      color: #334155;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+    .mob-c .m-tabs {
+      background: #111827;
+      border-top-color: #334155;
+      color: #cbd5e1;
+    }
+    .m-tab {
+      min-block-size: 48px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.15rem;
+      border-radius: 0;
+    }
+    .m-tab[aria-current="page"] {
+      color: #0369a1;
+      box-shadow: inset 0 3px 0 #0369a1;
+    }
+    .mob-c .m-tab[aria-current="page"] {
+      color: #38bdf8;
+      box-shadow: inset 0 3px 0 #38bdf8;
+    }
+
+    .gentle-nudge {
+      background: #fef3c7;
+      color: #78350f;
+      border: 1px solid #d97706;
+      border-radius: 0.75rem;
+      padding: 0.75rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      font-size: 0.88rem;
+    }
+    .mob-c .gentle-nudge {
+      background: #451a03;
+      color: #fef3c7;
+      border-color: #f59e0b;
+    }
+
+    .offline-pill {
+      background: #fef9c3;
+      color: #713f12;
+      border: 1px solid #ca8a04;
+      border-radius: 0.5rem;
+      padding: 0.4rem 0.65rem;
+      font-size: 0.8rem;
+      font-weight: 700;
+    }
+
+    .org-bar {
+      background: #eff6ff;
+      border: 1px dashed #2563eb;
+      color: #1e3a8a;
+      border-radius: 0.75rem;
+      padding: 0.7rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      font-size: 0.85rem;
+    }
+    .mob-c .org-bar {
+      background: #172554;
+      color: #dbeafe;
+      border-color: #60a5fa;
+    }
+
+    .seg-bar {
+      display: grid;
+      grid-template-columns: repeat(10, 1fr);
+      gap: 3px;
+      margin-top: 0.35rem;
+    }
+    .seg {
+      block-size: 12px;
+      border-radius: 3px;
+      background: #cbd5e1;
+      border: 1px solid #94a3b8;
+    }
+    .seg--done { background: #16a34a; border-color: #15803d; }
+    .seg--out { background: #0284c7; border-color: #0369a1; }
+    .mob-c .seg, .dash-a .seg, .dash-c .seg {
+      background: #334155;
+      border-color: #475569;
+    }
+    .mob-c .seg--done, .dash-a .seg--done, .dash-c .seg--done { background: #22c55e; border-color: #4ade80; }
+    .mob-c .seg--out, .dash-a .seg--out, .dash-c .seg--out { background: #38bdf8; border-color: #7dd3fc; }
+
+    .status-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 0.18rem 0.5rem;
+      border-radius: 999px;
+      border: 1px solid currentColor;
+      white-space: nowrap;
+    }
+
+    .quick-finish-btn {
+      background: #15803d;
+      color: #ffffff;
+      font-weight: 700;
+      font-size: 0.8rem;
+      padding: 0.4rem 0.7rem;
+      min-block-size: 40px;
+      border-radius: 0.5rem;
+      white-space: nowrap;
+    }
+    .quick-finish-btn:hover { background: #166534; }
+
+    /* ===== Basecamp Dashboard (TV / Laptop) Surfaces ===== */
+    .dash-wrap {
+      min-block-size: calc(100dvh - 3rem);
+      display: flex;
+      flex-direction: column;
+      container: dashboard / inline-size;
+    }
+
+    /* Dashboard Variant A: Classic Split Airport Board (Dark Chalet) */
+    .dash-a {
+      color-scheme: dark;
+      background: #0b1320;
+      color: #f8fafc;
+      padding: 1.5rem 2rem 2rem;
+      gap: 1.5rem;
+    }
+    .dash-a .d-header {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+      padding-bottom: 1rem;
+      border-bottom: 2px solid #1e293b;
+    }
+    .dash-a .d-title { font-size: clamp(1.5rem, 2.6vw, 2.3rem); font-weight: 900; letter-spacing: -0.02em; }
+    .dash-a .d-stats {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 1rem;
+    }
+    .dash-a .d-stat-pill {
+      background: #162235;
+      border: 1px solid #334155;
+      border-radius: 0.75rem;
+      padding: 0.55rem 1rem;
+      font-size: 1.05rem;
+      font-weight: 800;
+    }
+    .dash-a .d-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+      flex: 1;
+    }
+    @container dashboard (inline-size > 58rem) {
+      .dash-a .d-grid { grid-template-columns: 1.05fr 1fr; }
+    }
+    .dash-a .d-panel {
+      background: #111c2e;
+      border: 2px solid #24354f;
+      border-radius: 1.1rem;
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+    .dash-a .d-panel h2 {
+      font-size: 1.15rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #7dd3fc;
+    }
+    .dash-a .active-card {
+      background: #16243b;
+      border: 1px solid #38bdf8;
+      border-radius: 0.9rem;
+      padding: 1rem 1.15rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+    }
+    .dash-a .active-name { font-size: 1.45rem; font-weight: 900; }
+    .dash-a .active-sub { font-size: 1rem; color: #cbd5e1; margin-top: 0.15rem; }
+    .dash-a .active-time { text-align: right; font-family: var(--font-mono); }
+    .dash-a .active-elapsed { font-size: 1.75rem; font-weight: 900; color: #38bdf8; }
+    .dash-a .active-eta { font-size: 0.95rem; color: #fde68a; font-weight: 700; }
+    .dash-a .ondeck-banner {
+      background: #271f0f;
+      border: 2px solid #f59e0b;
+      border-radius: 1rem;
+      padding: 1.1rem 1.25rem;
+    }
+    .dash-a .ondeck-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 1rem;
+      margin-bottom: 0.7rem;
+    }
+    .dash-a .ondeck-clock {
+      font-family: var(--font-mono);
+      font-size: 1.8rem;
+      font-weight: 900;
+      color: #fbbf24;
+    }
+    .dash-a .ondeck-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.65rem;
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    .dash-a .ondeck-pill {
+      background: #451a03;
+      border: 1px solid #fbbf24;
+      color: #fef3c7;
+      border-radius: 0.6rem;
+      padding: 0.45rem 0.85rem;
+      font-size: 1.05rem;
+      font-weight: 700;
+    }
+    .dash-a .team-box {
+      background: #16243b;
+      border: 1px solid #334155;
+      border-radius: 0.9rem;
+      padding: 1rem 1.15rem;
+    }
+    .dash-a .team-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 0.75rem;
+    }
+    .dash-a .team-name { font-size: 1.35rem; font-weight: 900; }
+    .dash-a .team-km { font-size: 1.15rem; font-weight: 800; color: #4ade80; }
+    .dash-a .seg { block-size: 18px; }
+    .dash-a .ticker {
+      background: #172554;
+      border: 2px solid #60a5fa;
+      border-radius: 0.9rem;
+      padding: 0.85rem 1.25rem;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 1rem;
+      font-size: 1.05rem;
+    }
+
+    /* Dashboard Variant B: Daylight Poster + Horizontal Team Lanes */
+    .dash-b {
+      color-scheme: light;
+      background: #f8fafc;
+      color: #0f172a;
+      padding: 1.5rem 2rem 2rem;
+      gap: 1.25rem;
+    }
+    .dash-b .d-hero-bar {
+      background: #0f172a;
+      color: #ffffff;
+      border-radius: 1.1rem;
+      padding: 1.2rem 1.5rem;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1rem;
+      align-items: center;
+    }
+    @container dashboard (inline-size > 56rem) {
+      .dash-b .d-hero-bar { grid-template-columns: 1.2fr 1.6fr auto; }
+    }
+    .dash-b .d-countdown {
+      font-family: var(--font-mono);
+      font-size: clamp(2rem, 3.5vw, 3rem);
+      font-weight: 900;
+      color: #fbbf24;
+      line-height: 1;
+    }
+    .dash-b .d-main {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1.25rem;
+      flex: 1;
+    }
+    @container dashboard (inline-size > 64rem) {
+      .dash-b .d-main--with-badges { grid-template-columns: 1fr 340px; }
+    }
+    .dash-b .lane-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.9rem;
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    .dash-b .lane {
+      background: #ffffff;
+      border: 2px solid #0f172a;
+      border-radius: 1rem;
+      padding: 1.05rem 1.25rem;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 0.9rem;
+      align-items: center;
+      box-shadow: 0 4px 0 #cbd5e1;
+    }
+    @container dashboard (inline-size > 52rem) {
+      .dash-b .lane { grid-template-columns: 220px 1fr 270px; }
+    }
+    .dash-b .lane-name { font-size: 1.35rem; font-weight: 900; }
+    .dash-b .lane-km { font-size: 1rem; font-weight: 700; color: #15803d; }
+    .dash-b .seg { block-size: 22px; }
+    .dash-b .lane-status {
+      background: #eff6ff;
+      border: 2px solid #0284c7;
+      border-radius: 0.75rem;
+      padding: 0.65rem 0.9rem;
+    }
+    .dash-b .lane-status--rest {
+      background: #f1f5f9;
+      border-color: #94a3b8;
+    }
+    .dash-b .badges-aside {
+      background: #fffbeb;
+      border: 2px solid #d97706;
+      border-radius: 1rem;
+      padding: 1.15rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.8rem;
+    }
+    .dash-b .badge-item {
+      background: #ffffff;
+      border: 1px solid #f59e0b;
+      border-radius: 0.75rem;
+      padding: 0.75rem;
+    }
+
+    /* Dashboard Variant C: Three-Stage Relay Flow (Warm Timber Lodge) */
+    .dash-c {
+      color-scheme: dark;
+      background: #141210;
+      color: #faf5ee;
+      padding: 1.5rem 2rem 2rem;
+      gap: 1.25rem;
+    }
+    .dash-c .d-header {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+      background: #1f1b18;
+      border: 1px solid #443c35;
+      border-radius: 1rem;
+      padding: 1rem 1.35rem;
+    }
+    .dash-c .d-columns {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1.25rem;
+      flex: 1;
+    }
+    @container dashboard (inline-size > 62rem) {
+      .dash-c .d-columns { grid-template-columns: 1.1fr 0.95fr 1.15fr; }
+    }
+    .dash-c .stage-col {
+      background: #1c1917;
+      border: 2px solid #44403c;
+      border-radius: 1rem;
+      padding: 1.15rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.9rem;
+    }
+    .dash-c .stage-col--live { border-color: #38bdf8; }
+    .dash-c .stage-col--deck { border-color: #f59e0b; }
+    .dash-c .stage-col--teams { border-color: #22c55e; }
+    .dash-c .stage-title {
+      font-size: 1.1rem;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .dash-c .stage-card {
+      background: #292524;
+      border: 1px solid #57534e;
+      border-radius: 0.85rem;
+      padding: 0.95rem 1rem;
+    }
+
+    .dash-control-btn {
+      background: #1e293b;
+      color: #f8fafc;
+      border: 1px solid #64748b;
+      padding: 0.45rem 0.85rem;
+      font-size: 0.9rem;
+      font-weight: 700;
+      border-radius: 0.6rem;
+    }
+    .dash-b .dash-control-btn {
+      background: #334155;
+      color: #ffffff;
+      border-color: #94a3b8;
+    }
+    .dash-control-btn[aria-pressed="true"] {
+      background: #0284c7;
+      border-color: #7dd3fc;
+      color: #ffffff;
+    }
+
+    /* ===== Floating Prototype Switcher Bar (prototype/UI.md) ===== */
+    .proto-switcher {
+      position: fixed;
+      left: 50%;
+      bottom: max(0.75rem, env(safe-area-inset-bottom, 0px));
+      transform: translateX(-50%);
+      z-index: 900;
+      background: #0f172a;
+      color: #f8fafc;
+      border: 2px solid #38bdf8;
+      border-radius: 999px;
+      padding: 0.35rem 0.55rem;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.38);
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      max-inline-size: calc(100vw - 1.5rem);
+    }
+
+    .proto-switcher__surface {
+      display: inline-flex;
+      background: #1e293b;
+      border-radius: 999px;
+      padding: 0.15rem;
+      gap: 0.15rem;
+    }
+
+    .proto-switcher__surface button {
+      border-radius: 999px;
+      padding: 0.35rem 0.7rem;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: #cbd5e1;
+      min-block-size: 36px;
+    }
+    .proto-switcher__surface button[aria-pressed="true"] {
+      background: #38bdf8;
+      color: #082f49;
+    }
+
+    .proto-switcher__nav {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
+    .proto-switcher__arrow {
+      min-inline-size: 36px;
+      min-block-size: 36px;
+      border-radius: 999px;
+      background: #1e293b;
+      color: #f8fafc;
+      font-weight: 900;
+      font-size: 1rem;
+      border: 1px solid #475569;
+    }
+    .proto-switcher__arrow:hover { background: #334155; }
+
+    .proto-switcher__label {
+      font-size: 0.82rem;
+      font-weight: 800;
+      padding: 0 0.35rem;
+      white-space: nowrap;
+    }
+
+    /* ===== Accessible Toast Notifications (popover="manual") ===== */
+    .toast-region {
+      position: fixed;
+      inset: auto 1rem calc(4.75rem + env(safe-area-inset-bottom, 0px)) auto;
+      z-index: 950;
+      pointer-events: none;
+    }
+
+    [popover].undo-toast {
+      pointer-events: auto;
+      position: fixed;
+      inset: auto 1rem calc(4.75rem + env(safe-area-inset-bottom, 0px)) auto;
+      margin: 0;
+      max-inline-size: min(92vw, 380px);
+      background: #0f172a;
+      color: #f8fafc;
+      border: 2px solid #fbbf24;
+      border-radius: 0.85rem;
+      padding: 0.85rem 1rem;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+      opacity: 0;
+      transform: translateY(8px);
+      transition: opacity 180ms ease, transform 180ms ease, display 180ms ease, overlay 180ms ease;
+      transition-behavior: allow-discrete;
+    }
+
+    [popover].undo-toast:is(:popover-open, .\:popover-open) {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    @supports not selector(:popover-open) {
+      [popover]:not(.\:popover-open) { display: none; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      [popover].undo-toast {
+        transition: none;
+        transform: none;
+      }
+    }
+
+    .toast-actions {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+    }
+
+    .toast-undo-btn {
+      background: #fbbf24;
+      color: #0f172a;
+      font-weight: 800;
+      padding: 0.35rem 0.75rem;
+      min-block-size: 38px;
+      border-radius: 0.5rem;
+    }
+
+    .toast-close-btn {
+      background: #1e293b;
+      color: #f8fafc;
+      border: 1px solid #64748b;
+      padding: 0.35rem 0.6rem;
+      min-block-size: 38px;
+      border-radius: 0.5rem;
+      font-weight: 700;
+    }
+
+    /* ===== Forced Colors Mode Support ===== */
+    @media (forced-colors: active) {
+      .hero-card, .section-card, .d-panel, .lane, .stage-col, .proto-switcher, [popover].undo-toast {
+        border: 2px solid CanvasText;
+      }
+      .seg--done { background: Highlight; }
+      .seg--out { background: LinkText; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Prototype Meta Bar (Clearly throwaway + demo state toggles) -->
+  <header class="proto-banner">
+    <div class="proto-banner__tag">
+      <span aria-hidden="true">🧪</span>
+      <span>Throwaway UI Prototype · Frigid Feet 2027</span>
+    </div>
+    <div class="proto-controls" role="group" aria-label="Prototype demo controls">
+      <button type="button" class="proto-btn" id="toggle-org" aria-pressed="false">Organizer Mode: OFF</button>
+      <button type="button" class="proto-btn" id="toggle-60m" aria-pressed="true">60+ Min Runner: ON</button>
+      <button type="button" class="proto-btn" id="toggle-offline" aria-pressed="false">Offline Queue: OFF</button>
+      <button type="button" class="proto-btn" id="reset-demo">Reset State</button>
+    </div>
+  </header>
+
+  <!-- Main Rendered Surface -->
+  <main id="app-root" tabindex="-1"></main>
+
+  <!-- Toast Region (popover="manual" + centralized live region fallback for ariaNotify) -->
+  <div role="region" aria-label="Notifications" class="toast-region">
+    <div id="undo-toast" popover="manual" class="undo-toast">
+      <span id="undo-toast-text"></span>
+      <div class="toast-actions">
+        <button type="button" class="toast-undo-btn" id="undo-toast-btn">Undo</button>
+        <button type="button" class="toast-close-btn" popovertarget="undo-toast" popovertargetaction="hide" aria-label="Close notification">Close</button>
+      </div>
+    </div>
+  </div>
+  <p class="visually-hidden">Screen reader announcements</p>
+  <div id="sr-live" class="visually-hidden" aria-live="polite" aria-atomic="true"></div>
+
+  <!-- Floating Variant & Surface Switcher Bar (prototype/UI.md) -->
+  <nav class="proto-switcher" aria-label="Prototype variant switcher">
+    <div class="proto-switcher__surface" role="group" aria-label="Surface">
+      <button type="button" id="surf-mobile" aria-pressed="true">📱 Mobile</button>
+      <button type="button" id="surf-dashboard" aria-pressed="false">📺 Basecamp TV</button>
+    </div>
+    <div class="proto-switcher__nav">
+      <button type="button" class="proto-switcher__arrow" id="prev-variant" aria-label="Previous variant">←</button>
+      <span class="proto-switcher__label" id="variant-label">A (Action-First Hero)</span>
+      <button type="button" class="proto-switcher__arrow" id="next-variant" aria-label="Next variant">→</button>
+    </div>
+  </nav>
+
+  <script type="module">
+    // Conditionally load Popover polyfill only when native support is missing
+    if (!Object.hasOwn(HTMLElement.prototype, "popover")) {
+      import("https://unpkg.com/@oddbird/popover-polyfill@latest/dist/popover.min.js");
+    }
+
+    const COURSES = ["Pine Loop (Primary)", "River Trail", "Town Flat"];
+
+    const VARIANT_META = {
+      mobile: {
+        A: "A (Action-First Hero)",
+        B: "B (Timeline + Sticky Dock)",
+        C: "C (Dark Team Matrix)"
+      },
+      dashboard: {
+        A: "A (Split Airport Board)",
+        B: "B (Daylight Team Lanes)",
+        C: "C (3-Stage Relay Flow)"
+      }
+    };
+
+    const VARIANT_KEYS = ["A", "B", "C"];
+
+    function createInitialState() {
+      return {
+        currentRound: 4,
+        clockLabel: "11:24 AM",
+        nextRoundTime: "12:00 PM",
+        nextRoundSecondsLeft: 35 * 60 + 42,
+        signedInRunner: "Sam",
+        signedInTeamId: "ice-breakers",
+        organizerMode: false,
+        showOver60Demo: true,
+        offlineMode: false,
+        pendingSyncCount: 0,
+        chimeEnabled: false,
+        showBadges: true,
+        selectedRoundTab: 4,
+        teams: [
+          {
+            id: "frostbite-friends",
+            name: "Frostbite Friends",
+            color: "#38bdf8",
+            milestone: null,
+            legs: [
+              { round: 1, runner: "Alex", status: "completed", course: "Pine Loop (Primary)" },
+              { round: 2, runner: "Jordan", status: "completed", course: "River Trail" },
+              { round: 3, runner: "Priya", status: "completed", course: "Pine Loop (Primary)" },
+              { round: 4, runner: "Taylor", status: "out", course: "Pine Loop (Primary)", elapsedMin: 24, etaMin: 34 },
+              { round: 5, runner: "Alex", status: "scheduled", course: "Pine Loop (Primary)" },
+              { round: 6, runner: "Jordan", status: "scheduled", course: "Pine Loop (Primary)" },
+              { round: 7, runner: "Priya", status: "scheduled", course: "Pine Loop (Primary)" },
+              { round: 8, runner: "Taylor", status: "scheduled", course: "Pine Loop (Primary)" },
+              { round: 9, runner: "Alex", status: "scheduled", course: "Pine Loop (Primary)" },
+              { round: 10, runner: "Jordan", status: "scheduled", course: "Pine Loop (Primary)" }
+            ]
+          },
+          {
+            id: "hot-cocoa-crew",
+            name: "Hot Cocoa Crew",
+            color: "#fb923c",
+            milestone: "Halfway There (25K)!",
+            legs: [
+              { round: 1, runner: "Maya", status: "completed", course: "Town Flat" },
+              { round: 2, runner: "Devon", status: "completed", course: "Pine Loop (Primary)" },
+              { round: 3, runner: "Chris", status: "completed", course: "Pine Loop (Primary)" },
+              { round: 4, runner: "Maya", status: "completed", course: "Town Flat" },
+              { round: 5, runner: "Devon", status: "completed", course: "Pine Loop (Primary)" },
+              { round: 6, runner: "Chris", status: "scheduled", course: "Pine Loop (Primary)" },
+              { round: 7, runner: "Maya", status: "scheduled", course: "Town Flat" },
+              { round: 8, runner: "Devon", status: "scheduled", course: "Pine Loop (Primary)" },
+              { round: 9, runner: "Chris", status: "scheduled", course: "Pine Loop (Primary)" },
+              { round: 10, runner: "Maya", status: "scheduled", course: "Pine Loop (Primary)" }
+            ]
+          },
+          {
+            id: "ice-breakers",
+            name: "Ice Breakers",
+            color: "#a78bfa",
+            milestone: null,
+            legs: [
+              { round: 1, runner: "Sam", status: "completed", course: "Pine Loop (Primary)" },
+              { round: 2, runner: "Elena", status: "completed", course: "River Trail" },
+              { round: 3, runner: "Marcus", status: "completed", course: "Pine Loop (Primary)" },
+              { round: 4, runner: "Elena", status: "out", course: "River Trail", elapsedMin: 63, etaMin: 38, over60Demo: true },
+              { round: 5, runner: "Sam", status: "scheduled", course: "Pine Loop (Primary)" },
+              { round: 6, runner: "Marcus", status: "scheduled", course: "Pine Loop (Primary)" },
+              { round: 7, runner: "Elena", status: "scheduled", course: "River Trail" },
+              { round: 8, runner: "Sam", status: "scheduled", course: "Pine Loop (Primary)" },
+              { round: 9, runner: "Marcus", status: "scheduled", course: "Pine Loop (Primary)" },
+              { round: 10, runner: "Sam", status: "scheduled", course: "Pine Loop (Primary)" }
+            ]
+          },
+          {
+            id: "snowy-striders",
+            name: "Snowy Striders",
+            color: "#4ade80",
+            milestone: null,
+            legs: [
+              { round: 1, runner: "Nina", status: "completed", course: "Pine Loop (Primary)" },
+              { round: 2, runner: "Omar", status: "completed", course: "Town Flat" },
+              { round: 3, runner: "Casey", status: "completed", course: "Pine Loop (Primary)" },
+              { round: 4, runner: "Omar", status: "out", course: "Pine Loop (Primary)", elapsedMin: 19, etaMin: 32 },
+              { round: 5, runner: "Nina", status: "scheduled", course: "Pine Loop (Primary)" },
+              { round: 6, runner: "Casey", status: "scheduled", course: "Pine Loop (Primary)" },
+              { round: 7, runner: "Omar", status: "scheduled", course: "Town Flat" },
+              { round: 8, runner: "Nina", status: "scheduled", course: "Pine Loop (Primary)" },
+              { round: 9, runner: "Casey", status: "scheduled", course: "Pine Loop (Primary)" },
+              { round: 10, runner: "Omar", status: "scheduled", course: "Pine Loop (Primary)" }
+            ]
+          }
+        ],
+        badges: [
+          { emoji: "🎉", title: "First 5K Club", recipient: "Casey (Snowy Striders)", detail: "Completed their first 5K in Round 3!" },
+          { emoji: "🌅", title: "Dawn Patrol", recipient: "Alex, Maya, Sam, Nina", detail: "Kicked off Round 1 at 8:00 AM" },
+          { emoji: "🔥", title: "Halfway There (25K)", recipient: "Hot Cocoa Crew", detail: "5 of 10 Rounds complete" },
+          { emoji: "☕", title: "Basecamp Hero", recipient: "Pat (Supporter)", detail: "Brought hot cocoa & hand warmers" },
+          { emoji: "🧭", title: "Course Explorer", recipient: "Elena (Ice Breakers)", detail: "Ran 2+ Courses today" }
+        ]
+      };
+    }
+
+    let state = createInitialState();
+    let lastUndoSnapshot = null;
+    let toastTimer = null;
+    let priorFocusEl = null;
+
+    // URL state (?surface=mobile|dashboard&variant=A|B|C)
+    function readUrlParams() {
+      const params = new URLSearchParams(window.location.search);
+      const surface = params.get("surface") === "dashboard" ? "dashboard" : "mobile";
+      const v = (params.get("variant") || "A").toUpperCase();
+      const variant = VARIANT_KEYS.includes(v) ? v : "A";
+      return { surface, variant };
+    }
+
+    let route = readUrlParams();
+
+    function syncUrl() {
+      const url = new URL(window.location.href);
+      url.searchParams.set("surface", route.surface);
+      url.searchParams.set("variant", route.variant);
+      window.history.replaceState({}, "", url);
+      document.title = `Frigid Feet 50K — ${route.surface === "mobile" ? "Mobile" : "Basecamp TV"} Variant ${route.variant}`;
+    }
+
+    // Derived Helpers
+    function getTotalCompletedLegs() {
+      return state.teams.reduce((sum, t) => sum + t.legs.filter(l => l.status === "completed").length, 0);
+    }
+
+    function getActiveLegs() {
+      const out = [];
+      for (const team of state.teams) {
+        for (const leg of team.legs) {
+          if (leg.status === "out") {
+            const elapsed = leg.over60Demo && !state.showOver60Demo ? 28 : (leg.elapsedMin ?? 1);
+            out.push({ team, leg, elapsed });
+          }
+        }
+      }
+      return out;
+    }
+
+    function getOnDeckLegs() {
+      const nextRound = Math.min(10, state.currentRound + 1);
+      const list = [];
+      for (const team of state.teams) {
+        const leg = team.legs.find(l => l.round === nextRound);
+        if (leg && leg.status === "scheduled") {
+          list.push({ team, leg });
+        }
+      }
+      return { nextRound, list };
+    }
+
+    function getMyTeam() {
+      return state.teams.find(t => t.id === state.signedInTeamId);
+    }
+
+    function getMyPrimaryLeg() {
+      const myTeam = getMyTeam();
+      const activeMine = myTeam.legs.find(l => l.runner === state.signedInRunner && l.status === "out");
+      if (activeMine) return activeMine;
+      const nextMine = myTeam.legs.find(l => l.runner === state.signedInRunner && l.status === "scheduled");
+      return nextMine || myTeam.legs[myTeam.legs.length - 1];
+    }
+
+    function formatCountdown(sec) {
+      const m = Math.floor(sec / 60);
+      const s = sec % 60;
+      return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+    }
+
+    function formatEta(elapsed, etaMin) {
+      const remaining = (etaMin || 35) - elapsed;
+      if (remaining > 0) return `~${remaining}m to Basecamp`;
+      return `Due back soon`;
+    }
+
+    // Accessible Toast with popover="manual", focus-aware timer, and ariaNotify fallback
+    const toastEl = document.getElementById("undo-toast");
+    const toastTextEl = document.getElementById("undo-toast-text");
+    const toastUndoBtn = document.getElementById("undo-toast-btn");
+    const srLiveEl = document.getElementById("sr-live");
+
+    function announceStatus(message, hasActions = false) {
+      const fullMsg = hasActions ? `${message} Actions available.` : message;
+      if (typeof document.ariaNotify === "function") {
+        document.ariaNotify(fullMsg, { priority: "normal" });
+      } else {
+        srLiveEl.textContent = "";
+        requestAnimationFrame(() => { srLiveEl.textContent = fullMsg; });
+      }
+    }
+
+    function hideToast(returnFocus = false) {
+      clearTimeout(toastTimer);
+      try { toastEl.hidePopover(); } catch { toastEl.classList.remove(":popover-open"); }
+      if (returnFocus && priorFocusEl && document.contains(priorFocusEl)) {
+        priorFocusEl.focus();
+      }
+    }
+
+    function showUndoToast(message, snapshot) {
+      priorFocusEl = document.activeElement;
+      lastUndoSnapshot = snapshot;
+      toastTextEl.textContent = message;
+      toastUndoBtn.hidden = !snapshot;
+      try { toastEl.showPopover(); } catch { toastEl.classList.add(":popover-open"); }
+      announceStatus(message, Boolean(snapshot));
+
+      clearTimeout(toastTimer);
+      const scheduleClose = () => {
+        toastTimer = setTimeout(() => {
+          if (toastEl.contains(document.activeElement)) {
+            scheduleClose();
+          } else {
+            hideToast(false);
+          }
+        }, 8000);
+      };
+      scheduleClose();
+    }
+
+    toastUndoBtn.addEventListener("click", () => {
+      if (lastUndoSnapshot) {
+        state = JSON.parse(lastUndoSnapshot);
+        lastUndoSnapshot = null;
+        hideToast(true);
+        render();
+        announceStatus("Action undone.");
+      }
+    });
+
+    toastEl.addEventListener("toggle", (e) => {
+      if (e.newState === "closed") {
+        clearTimeout(toastTimer);
+      }
+    });
+
+    // Gentle Web Audio chime (only when user explicitly enables or tests it)
+    function playGentleChime() {
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const now = ctx.currentTime;
+        [523.25, 659.25].forEach((freq, i) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = "sine";
+          osc.frequency.value = freq;
+          gain.gain.setValueAtTime(0.001, now + i * 0.18);
+          gain.gain.exponentialRampToValueAtTime(0.12, now + i * 0.18 + 0.04);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.18 + 0.55);
+          osc.connect(gain).connect(ctx.destination);
+          osc.start(now + i * 0.18);
+          osc.stop(now + i * 0.18 + 0.6);
+        });
+      } catch {
+        // Ignore if audio context blocked
+      }
+    }
+
+    // Mutations (In-Memory)
+    function mutateLeg(teamId, round, action, newCourse) {
+      const snapshot = JSON.stringify(state);
+      const team = state.teams.find(t => t.id === teamId);
+      const leg = team?.legs.find(l => l.round === round);
+      if (!leg) return;
+
+      if (newCourse) leg.course = newCourse;
+
+      let msg = "";
+      if (action === "start") {
+        leg.status = "out";
+        leg.elapsedMin = 1;
+        leg.etaMin = 35;
+        leg.over60Demo = false;
+        msg = `Started Round ${round} for ${leg.runner} (${team.name}).`;
+      } else if (action === "finish") {
+        leg.status = "completed";
+        leg.over60Demo = false;
+        msg = `Finished Round ${round} — 5K logged for ${leg.runner}!`;
+      } else if (action === "revert") {
+        leg.status = "scheduled";
+        leg.over60Demo = false;
+        msg = `Reverted Round ${round} (${leg.runner}) to Scheduled.`;
+      }
+
+      const doneCount = team.legs.filter(l => l.status === "completed").length;
+      if (doneCount === 10) team.milestone = "50K Finisher!";
+      else if (doneCount >= 5) team.milestone = "Halfway There (25K)!";
+      else team.milestone = null;
+
+      if (state.offlineMode) {
+        state.pendingSyncCount += 1;
+        msg += " Saved locally — syncing...";
+      }
+
+      render();
+      showUndoToast(msg, snapshot);
+    }
+
+    function startNextRoundMass() {
+      const snapshot = JSON.stringify(state);
+      const nextR = Math.min(10, state.currentRound + 1);
+      let started = 0;
+      for (const team of state.teams) {
+        const leg = team.legs.find(l => l.round === nextR);
+        if (leg && leg.status === "scheduled") {
+          leg.status = "out";
+          leg.elapsedMin = 1;
+          leg.etaMin = 35;
+          started++;
+        }
+      }
+      state.currentRound = nextR;
+      state.selectedRoundTab = nextR;
+      state.nextRoundSecondsLeft = 59 * 60 + 55;
+      render();
+      showUndoToast(`Organizer started Round ${nextR} (${started} Runners Out on Course).`, snapshot);
+    }
+
+    // ===== Renderers: Mobile Variants =====
+    function renderSegBar(team) {
+      return `
+        <div class="seg-bar" role="img" aria-label="${team.name}: ${team.legs.filter(l => l.status === "completed").length} of 10 Rounds completed">
+          ${team.legs.map(l => `<span class="seg ${l.status === "completed" ? "seg--done" : l.status === "out" ? "seg--out" : ""}"></span>`).join("")}
+        </div>
+      `;
+    }
+
+    function renderMobileBottomNav() {
+      return `
+        <nav class="m-tabs" aria-label="App navigation">
+          <button type="button" class="m-tab" aria-label="Home"><span aria-hidden="true">🏠</span><span>Home</span></button>
+          <button type="button" class="m-tab" aria-label="Teams"><span aria-hidden="true">👟</span><span>Teams</span></button>
+          <button type="button" class="m-tab" aria-current="page" aria-label="Race Day"><span aria-hidden="true">⏱️</span><span>Race Day</span></button>
+          <button type="button" class="m-tab" aria-label="Supplies"><span aria-hidden="true">☕</span><span>Supplies</span></button>
+        </nav>
+      `;
+    }
+
+    function renderMobileVariantA() {
+      const myTeam = getMyTeam();
+      const myLeg = getMyPrimaryLeg();
+      const activeLegs = getActiveLegs();
+      const myCompleted = myTeam.legs.filter(l => l.status === "completed").length;
+      const totalKm = getTotalCompletedLegs() * 5;
+      const over60Leg = activeLegs.find(item => item.elapsed >= 60 && item.team.id === myTeam.id);
+
+      return `
+        <div class="mob-a">
+          <div class="m-top">
+            <div>
+              <h1>Frigid Feet 2027</h1>
+              <p style="font-size:0.78rem; color:#cbd5e1;">Hi Sam · ${myTeam.name} · ${totalKm} km today</p>
+            </div>
+            <span class="m-round-pill">Round ${state.currentRound} / 10</span>
+          </div>
+
+          <div class="m-body">
+            ${state.offlineMode ? `<div class="offline-pill">📡 Offline mode · ${state.pendingSyncCount} tap(s) saved locally — syncing on reconnect</div>` : ""}
+
+            ${state.organizerMode ? `
+              <div class="org-bar">
+                <strong>Organizer Controls</strong>
+                <button type="button" class="big-cta big-cta--secondary" data-action="mass-start">
+                  📣 Start Round ${Math.min(10, state.currentRound + 1)} (All Scheduled Runners)
+                </button>
+              </div>
+            ` : ""}
+
+            ${over60Leg ? `
+              <div class="gentle-nudge" role="status">
+                <strong>Forgot to check in?</strong>
+                <span>${over60Leg.leg.runner} has been Out on Course for ${over60Leg.elapsed} min (Round ${over60Leg.leg.round}). No rush — tap when back at Basecamp!</span>
+                <button type="button" class="quick-finish-btn" data-team="${over60Leg.team.id}" data-round="${over60Leg.leg.round}" data-action="finish">
+                  ✓ Finish ${over60Leg.leg.runner}'s Leg
+                </button>
+              </div>
+            ` : ""}
+
+            <!-- Giant Glove-Friendly Hero Card -->
+            <section class="hero-card" aria-label="Your current or next Leg">
+              <div class="hero-kicker">
+                <span aria-hidden="true">${myLeg.status === "out" ? "🏃" : "⏰"}</span>
+                <span>${myLeg.status === "out" ? `YOU ARE OUT ON COURSE · ROUND ${myLeg.round}` : `YOUR NEXT LEG · ROUND ${myLeg.round}`}</span>
+              </div>
+              <div class="hero-title">
+                ${myLeg.status === "out"
+                  ? `${myLeg.elapsedMin ?? 1} min elapsed`
+                  : `${state.nextRoundTime} · in ${formatCountdown(state.nextRoundSecondsLeft)}`}
+              </div>
+              <p class="hero-meta">
+                ${myLeg.status === "out"
+                  ? `Running for ${myTeam.name}. Warm cocoa is waiting at Basecamp!`
+                  : `Bundle up & stretch! Your pace stays private — every 5K counts.`}
+              </p>
+
+              <div class="course-row">
+                <label for="course-a"><strong>Course:</strong></label>
+                <select id="course-a" data-course-team="${myTeam.id}" data-course-round="${myLeg.round}">
+                  ${COURSES.map(c => `<option value="${c}" ${myLeg.course === c ? "selected" : ""}>${c}</option>`).join("")}
+                </select>
+              </div>
+
+              ${myLeg.status === "out" ? `
+                <button type="button" class="big-cta big-cta--finish" data-team="${myTeam.id}" data-round="${myLeg.round}" data-action="finish">
+                  ✓ FINISH MY 5K LEG
+                </button>
+              ` : `
+                <button type="button" class="big-cta" data-team="${myTeam.id}" data-round="${myLeg.round}" data-action="start">
+                  ▶ START ROUND ${myLeg.round} LEG
+                </button>
+                <button type="button" class="big-cta big-cta--secondary" data-team="${myTeam.id}" data-round="${myLeg.round}" data-action="finish">
+                  Mark Completed (Retroactive)
+                </button>
+              `}
+            </section>
+
+            <!-- Active Runners Quick-Finish -->
+            <section class="section-card">
+              <h2>Out on Course Now (${activeLegs.length})</h2>
+              ${activeLegs.length === 0 ? `<p style="font-size:0.88rem; color:#475569;">Everyone is cozy at Basecamp right now!</p>` : `
+                <ul style="list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:0.55rem;">
+                  ${activeLegs.map(({ team, leg, elapsed }) => `
+                    <li style="display:flex; justify-content:space-between; align-items:center; gap:0.5rem; padding:0.5rem 0.65rem; background:#f8fafc; border:1px solid #cbd5e1; border-radius:0.6rem;">
+                      <div>
+                        <strong>${leg.runner}</strong> <span style="font-size:0.8rem; color:#475569;">(${team.name})</span>
+                        <div style="font-size:0.78rem; color:#334155;">${leg.course} · ${elapsed}m · ${formatEta(elapsed, leg.etaMin)}</div>
+                      </div>
+                      ${(team.id === myTeam.id || state.organizerMode) ? `
+                        <button type="button" class="quick-finish-btn" data-team="${team.id}" data-round="${leg.round}" data-action="finish">Finish</button>
+                      ` : `<span class="status-chip" style="color:#0369a1;">Out</span>`}
+                    </li>
+                  `).join("")}
+                </ul>
+              `}
+            </section>
+
+            <!-- My Team 50K Progress -->
+            <section class="section-card">
+              <div style="display:flex; justify-content:space-between; align-items:baseline;">
+                <h2>${myTeam.name}</h2>
+                <strong style="color:#15803d;">${myCompleted * 5} / 50 km (${myCompleted}/10)</strong>
+              </div>
+              ${renderSegBar(myTeam)}
+              <p style="font-size:0.82rem; color:#334155;">${myTeam.milestone ? `🎉 ${myTeam.milestone}` : "Keep rolling — halfway milestone at 25 km!"}</p>
+            </section>
+          </div>
+
+          ${renderMobileBottomNav()}
+        </div>
+      `;
+    }
+
+    function renderMobileVariantB() {
+      const myTeam = getMyTeam();
+      const myLeg = getMyPrimaryLeg();
+      const activeLegs = getActiveLegs();
+      const totalKm = getTotalCompletedLegs() * 5;
+      const selR = state.selectedRoundTab;
+      const over60Leg = activeLegs.find(item => item.elapsed >= 60 && item.team.id === myTeam.id);
+
+      const legsInSelectedRound = state.teams.map(team => ({
+        team,
+        leg: team.legs.find(l => l.round === selR)
+      }));
+
+      return `
+        <div class="mob-b">
+          <div class="m-top">
+            <div class="m-top-row">
+              <h1>Frigid Feet 2027 · Race Day</h1>
+              <span style="font-size:0.85rem; font-weight:800;">${state.clockLabel}</span>
+            </div>
+            <p class="m-collective">🎉 Friends ran ${totalKm} km together today!</p>
+          </div>
+
+          <!-- Horizontal 10-Round Pill Rail -->
+          <div class="round-rail" role="tablist" aria-label="Rounds 1 to 10">
+            ${Array.from({ length: 10 }, (_, i) => i + 1).map(r => {
+              const isLive = r === state.currentRound;
+              const isDone = r < state.currentRound;
+              const isSel = r === selR;
+              return `
+                <button type="button" role="tab" aria-selected="${isSel}" data-select-round="${r}"
+                  class="round-chip ${isLive ? "round-chip--live" : isDone ? "round-chip--done" : ""} ${isSel ? "round-chip--selected" : ""}">
+                  R${r} ${isLive ? "●" : isDone ? "✓" : ""}
+                </button>
+              `;
+            }).join("")}
+          </div>
+
+          <div class="m-body">
+            ${state.offlineMode ? `<div class="offline-pill">📡 Offline · ${state.pendingSyncCount} check-in(s) queued locally</div>` : ""}
+
+            ${state.organizerMode ? `
+              <div class="org-bar">
+                <strong>Organizer Quick Action</strong>
+                <button type="button" class="quick-finish-btn" style="background:#1d4ed8;" data-action="mass-start">
+                  📣 Start Round ${Math.min(10, state.currentRound + 1)} for All Teams
+                </button>
+              </div>
+            ` : ""}
+
+            ${over60Leg ? `
+              <div class="gentle-nudge" role="status">
+                <strong>Gentle check-in nudge</strong>
+                <span>${over60Leg.leg.runner} has been out ${over60Leg.elapsed} min. Forgot to check in?</span>
+                <button type="button" class="quick-finish-btn" data-team="${over60Leg.team.id}" data-round="${over60Leg.leg.round}" data-action="finish">
+                  ✓ Mark ${over60Leg.leg.runner} Back
+                </button>
+              </div>
+            ` : ""}
+
+            <!-- Chronological Round Feed -->
+            <section class="timeline-block">
+              <h2>Round ${selR} Lineup ${selR === state.currentRound ? "(Live Now)" : selR === state.currentRound + 1 ? `(On Deck · ${state.nextRoundTime})` : ""}</h2>
+              ${legsInSelectedRound.map(({ team, leg }) => {
+                const canAct = team.id === myTeam.id || state.organizerMode;
+                const elapsed = leg.over60Demo && !state.showOver60Demo ? 28 : (leg.elapsedMin ?? 1);
+                return `
+                  <div class="runner-row">
+                    <div>
+                      <div style="font-weight:800; font-size:0.95rem;">${leg.runner} · <span style="font-weight:600; color:#57534e;">${team.name}</span></div>
+                      <div style="font-size:0.8rem; color:#44403c;">
+                        ${leg.status === "completed" ? `✓ Completed 5K · ${leg.course}` :
+                          leg.status === "out" ? `🏃 Out ${elapsed}m · ${formatEta(elapsed, leg.etaMin)} · ${leg.course}` :
+                          `⏳ Scheduled · ${leg.course}`}
+                      </div>
+                    </div>
+                    ${canAct && leg.status === "out" ? `
+                      <button type="button" class="quick-finish-btn" data-team="${team.id}" data-round="${leg.round}" data-action="finish">Finish</button>
+                    ` : canAct && leg.status === "scheduled" ? `
+                      <button type="button" class="proto-btn" style="background:#b45309; border-color:#78350f;" data-team="${team.id}" data-round="${leg.round}" data-action="start">Start</button>
+                    ` : `<span class="status-chip" style="color:${leg.status === "completed" ? "#15803d" : "#57534e"};">${leg.status === "completed" ? "✓ 5K" : leg.status === "out" ? "Out" : "Deck"}</span>`}
+                  </div>
+                `;
+              }).join("")}
+            </section>
+
+            <!-- Compact All Teams 50K -->
+            <section style="display:flex; flex-direction:column; gap:0.55rem;">
+              <h2 style="font-size:0.95rem; font-weight:800;">All Teams Toward 50K (A–Z)</h2>
+              ${state.teams.map(team => {
+                const done = team.legs.filter(l => l.status === "completed").length;
+                return `
+                  <div style="background:#ffffff; border:1px solid #d6d3d1; border-radius:0.75rem; padding:0.65rem 0.75rem;">
+                    <div style="display:flex; justify-content:space-between; font-size:0.88rem; font-weight:800;">
+                      <span>${team.name}</span>
+                      <span style="color:#15803d;">${done * 5} / 50 km</span>
+                    </div>
+                    ${renderSegBar(team)}
+                  </div>
+                `;
+              }).join("")}
+            </section>
+          </div>
+
+          <!-- Sticky Bottom Thumb Action Dock -->
+          <div class="sticky-dock" aria-label="Your Leg quick action">
+            <div>
+              <div style="font-size:0.75rem; color:#fcd34d; font-weight:800; text-transform:uppercase;">
+                ${myLeg.status === "out" ? `Sam · Round ${myLeg.round} Active` : `Sam · Next: Round ${myLeg.round}`}
+              </div>
+              <div style="font-size:0.9rem; font-weight:700;">
+                ${myLeg.status === "out" ? `${myLeg.elapsedMin ?? 1}m out · ${myLeg.course}` : `Starts ${state.nextRoundTime} (${formatCountdown(state.nextRoundSecondsLeft)})`}
+              </div>
+            </div>
+            <button type="button" class="dock-btn" data-team="${myTeam.id}" data-round="${myLeg.round}" data-action="${myLeg.status === "out" ? "finish" : "start"}">
+              ${myLeg.status === "out" ? "✓ Finish 5K" : "▶ Start Leg"}
+            </button>
+          </div>
+
+          ${renderMobileBottomNav()}
+        </div>
+      `;
+    }
+
+    function renderMobileVariantC() {
+      const myTeam = getMyTeam();
+      const myCompleted = myTeam.legs.filter(l => l.status === "completed").length;
+      const activeLegs = getActiveLegs();
+      const over60Leg = activeLegs.find(item => item.elapsed >= 60 && item.team.id === myTeam.id);
+
+      return `
+        <div class="mob-c">
+          <div class="m-top">
+            <div>
+              <h1>${myTeam.name}</h1>
+              <p style="font-size:0.78rem; color:#94a3b8;">Round ${state.currentRound} of 10 · Next in ${formatCountdown(state.nextRoundSecondsLeft)}</p>
+            </div>
+            <strong style="color:#4ade80; font-size:1rem;">${myCompleted * 5}/50 km</strong>
+          </div>
+
+          <div class="m-body">
+            ${state.offlineMode ? `<div class="offline-pill">📡 Offline queue active (${state.pendingSyncCount} saved locally)</div>` : ""}
+
+            ${state.organizerMode ? `
+              <div class="org-bar">
+                <strong>Organizer Mass Start</strong>
+                <button type="button" class="cell-btn" style="font-size:0.85rem;" data-action="mass-start">
+                  📣 Start Round ${Math.min(10, state.currentRound + 1)} Now
+                </button>
+              </div>
+            ` : ""}
+
+            ${over60Leg ? `
+              <div class="gentle-nudge" role="status">
+                <strong>Forgot to check in?</strong>
+                <span>${over60Leg.leg.runner} (Round ${over60Leg.leg.round}) is at ${over60Leg.elapsed} min. Tap below when back!</span>
+                <button type="button" class="cell-btn cell-btn--finish" data-team="${over60Leg.team.id}" data-round="${over60Leg.leg.round}" data-action="finish">
+                  ✓ Finish ${over60Leg.leg.runner}'s 5K
+                </button>
+              </div>
+            ` : ""}
+
+            <!-- 10-Round Team Matrix -->
+            <section class="matrix-card">
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <h2 style="font-size:0.95rem; font-weight:800;">Your Team's 10-Round Board</h2>
+                <span style="font-size:0.78rem; color:#cbd5e1;">Tap any Round to log</span>
+              </div>
+              ${renderSegBar(myTeam)}
+              <div class="round-grid">
+                ${myTeam.legs.map(leg => {
+                  const isNext = leg.round === state.currentRound + 1 && leg.status === "scheduled";
+                  const elapsed = leg.over60Demo && !state.showOver60Demo ? 28 : (leg.elapsedMin ?? 1);
+                  const cls = leg.status === "completed" ? "round-cell--done" : leg.status === "out" ? "round-cell--out" : isNext ? "round-cell--next" : "";
+                  return `
+                    <div class="round-cell ${cls}">
+                      <div style="display:flex; justify-content:space-between; font-weight:800;">
+                        <span>R${leg.round}</span>
+                        <span>${leg.status === "completed" ? "✓ 5K" : leg.status === "out" ? `🏃 ${elapsed}m` : isNext ? "ON DECK" : "Sched"}</span>
+                      </div>
+                      <div style="font-weight:700; color:#f8fafc;">${leg.runner}${leg.runner === state.signedInRunner ? " (You)" : ""}</div>
+                      <div style="font-size:0.72rem; color:#cbd5e1;">${leg.course.replace(" (Primary)", "")}</div>
+                      ${leg.status === "out" ? `
+                        <button type="button" class="cell-btn cell-btn--finish" data-team="${myTeam.id}" data-round="${leg.round}" data-action="finish">Finish 5K</button>
+                      ` : leg.status === "scheduled" && leg.round <= state.currentRound + 1 ? `
+                        <button type="button" class="cell-btn" data-team="${myTeam.id}" data-round="${leg.round}" data-action="start">Start Leg</button>
+                      ` : ""}
+                    </div>
+                  `;
+                }).join("")}
+              </div>
+            </section>
+
+            <!-- Compact Out-on-Course Summary -->
+            <section class="matrix-card">
+              <h2 style="font-size:0.9rem; font-weight:800; margin-bottom:0.5rem;">Out on Course Across Basecamp (${activeLegs.length})</h2>
+              <ul style="list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:0.4rem; font-size:0.84rem;">
+                ${activeLegs.map(({ team, leg, elapsed }) => `
+                  <li style="display:flex; justify-content:space-between; gap:0.5rem;">
+                    <span><strong>${leg.runner}</strong> (${team.name})</span>
+                    <span style="color:#7dd3fc;">${elapsed}m · ${formatEta(elapsed, leg.etaMin)}</span>
+                  </li>
+                `).join("")}
+              </ul>
+            </section>
+          </div>
+
+          ${renderMobileBottomNav()}
+        </div>
+      `;
+    }
+
+    // ===== Renderers: Basecamp Dashboard (TV/Laptop) Variants =====
+    function renderDashboardControls() {
+      return `
+        <div style="display:flex; flex-wrap:wrap; gap:0.5rem; align-items:center;">
+          <button type="button" class="dash-control-btn" id="dash-toggle-badges" aria-pressed="${state.showBadges}">
+            🏅 Badges: ${state.showBadges ? "ON" : "OFF"}
+          </button>
+          <button type="button" class="dash-control-btn" id="dash-toggle-chime" aria-pressed="${state.chimeEnabled}">
+            ${state.chimeEnabled ? "🔔 Chime: ON (T-5/T-0)" : "🔇 Chime: Muted"}
+          </button>
+        </div>
+      `;
+    }
+
+    function renderDashboardVariantA() {
+      const activeLegs = getActiveLegs();
+      const { nextRound, list: onDeck } = getOnDeckLegs();
+      const totalKm = getTotalCompletedLegs() * 5;
+
+      return `
+        <div class="dash-wrap dash-a">
+          <div class="d-header">
+            <div>
+              <h1 class="d-title">❄️ FRIGID FEET 50K · BASECAMP BOARD</h1>
+              <p style="color:#cbd5e1; font-size:1.05rem;">Friends ran <strong style="color:#4ade80;">${totalKm} km</strong> together today!</p>
+            </div>
+            <div class="d-stats">
+              <span class="d-stat-pill">Round ${state.currentRound} of 10</span>
+              <span class="d-stat-pill" style="font-family:var(--font-mono);">${state.clockLabel}</span>
+              ${renderDashboardControls()}
+            </div>
+          </div>
+
+          <div class="d-grid">
+            <!-- Left Column: Active Runners + On Deck Banner -->
+            <div style="display:flex; flex-direction:column; gap:1.25rem;">
+              <section class="d-panel">
+                <h2>🏃 Out on Course (${activeLegs.length})</h2>
+                ${activeLegs.length === 0 ? `<p style="font-size:1.15rem; color:#cbd5e1;">Everyone is warming up at Basecamp!</p>` : activeLegs.map(({ team, leg, elapsed }) => `
+                  <div class="active-card">
+                    <div>
+                      <div class="active-name">${leg.runner}</div>
+                      <div class="active-sub">${team.name} · ${leg.course}</div>
+                    </div>
+                    <div class="active-time">
+                      <div class="active-elapsed">${elapsed} min</div>
+                      <div class="active-eta">${formatEta(elapsed, leg.etaMin)}</div>
+                    </div>
+                  </div>
+                `).join("")}
+              </section>
+
+              <section class="ondeck-banner" aria-label="Next Round on deck">
+                <div class="ondeck-head">
+                  <h2 style="font-size:1.15rem; font-weight:900; color:#fde68a;">⏰ ON DECK · ROUND ${nextRound} (${state.nextRoundTime})</h2>
+                  <span class="ondeck-clock">T-${formatCountdown(state.nextRoundSecondsLeft)}</span>
+                </div>
+                <ul class="ondeck-list">
+                  ${onDeck.map(({ team, leg }) => `
+                    <li class="ondeck-pill">${leg.runner} <span style="opacity:0.85; font-weight:500;">(${team.name})</span></li>
+                  `).join("")}
+                </ul>
+              </section>
+            </div>
+
+            <!-- Right Column: Teams 50K Progress (Alphabetical) -->
+            <section class="d-panel">
+              <h2>👟 Team Progress Toward 50K (A–Z)</h2>
+              ${state.teams.map(team => {
+                const done = team.legs.filter(l => l.status === "completed").length;
+                return `
+                  <div class="team-box">
+                    <div class="team-top">
+                      <span class="team-name">${team.name}</span>
+                      <span class="team-km">${done * 5} / 50 km · ${done}/10 Rounds</span>
+                    </div>
+                    ${renderSegBar(team)}
+                    ${team.milestone ? `<div style="margin-top:0.45rem; font-size:0.95rem; font-weight:800; color:#fbbf24;">🎉 ${team.milestone}</div>` : ""}
+                  </div>
+                `;
+              }).join("")}
+            </section>
+          </div>
+
+          ${state.showBadges ? `
+            <section class="ticker" aria-label="Live Badges celebration ticker">
+              <strong style="color:#93c5fd; text-transform:uppercase; letter-spacing:0.05em;">🏅 Live Badges:</strong>
+              ${state.badges.slice(0, 3).map(b => `<span>${b.emoji} <strong>${b.title}</strong> — ${b.recipient}</span>`).join(" · ")}
+            </section>
+          ` : ""}
+        </div>
+      `;
+    }
+
+    function renderDashboardVariantB() {
+      const { nextRound, list: onDeck } = getOnDeckLegs();
+      const totalKm = getTotalCompletedLegs() * 5;
+
+      return `
+        <div class="dash-wrap dash-b">
+          <!-- Broadcast Hero Banner: Countdown + On Deck -->
+          <section class="d-hero-bar">
+            <div>
+              <p style="font-size:0.9rem; font-weight:800; color:#93c5fd; text-transform:uppercase; letter-spacing:0.06em;">
+                Frigid Feet 2027 · Round ${state.currentRound}/10 · ${totalKm} km Together
+              </p>
+              <div class="d-countdown">ROUND ${nextRound} IN ${formatCountdown(state.nextRoundSecondsLeft)}</div>
+            </div>
+            <div>
+              <div style="font-size:0.85rem; font-weight:800; color:#fde68a; text-transform:uppercase; margin-bottom:0.4rem;">
+                On Deck at ${state.nextRoundTime}
+              </div>
+              <div style="display:flex; flex-wrap:wrap; gap:0.5rem;">
+                ${onDeck.map(({ team, leg }) => `
+                  <span style="background:#1e293b; border:1px solid #fbbf24; color:#fef3c7; padding:0.35rem 0.75rem; border-radius:0.5rem; font-weight:700; font-size:1rem;">
+                    ${leg.runner} (${team.name})
+                  </span>
+                `).join("")}
+              </div>
+            </div>
+            <div>${renderDashboardControls()}</div>
+          </section>
+
+          <div class="d-main ${state.showBadges ? "d-main--with-badges" : ""}">
+            <!-- Horizontal Team Lanes (Progress + Inline Active Runner) -->
+            <section>
+              <h1 style="font-size:1.3rem; font-weight:900; margin-bottom:0.75rem;">Team Lanes (Alphabetical · 10 × 5K = 50K)</h1>
+              <ul class="lane-list">
+                ${state.teams.map(team => {
+                  const done = team.legs.filter(l => l.status === "completed").length;
+                  const active = team.legs.find(l => l.status === "out");
+                  const elapsed = active ? (active.over60Demo && !state.showOver60Demo ? 28 : (active.elapsedMin ?? 1)) : 0;
+                  return `
+                    <li class="lane">
+                      <div>
+                        <div class="lane-name">${team.name}</div>
+                        <div class="lane-km">${done * 5} / 50 km (${done}/10 Rounds)</div>
+                        ${team.milestone ? `<div style="font-size:0.88rem; font-weight:800; color:#b45309; margin-top:0.2rem;">🎉 ${team.milestone}</div>` : ""}
+                      </div>
+                      <div>
+                        ${renderSegBar(team)}
+                      </div>
+                      <div class="lane-status ${active ? "" : "lane-status--rest"}">
+                        ${active ? `
+                          <div style="font-size:0.78rem; font-weight:800; color:#0369a1; text-transform:uppercase;">🏃 Out on Course</div>
+                          <div style="font-size:1.15rem; font-weight:900;">${active.runner} · ${elapsed} min</div>
+                          <div style="font-size:0.88rem; color:#334155;">${active.course} · ${formatEta(elapsed, active.etaMin)}</div>
+                        ` : `
+                          <div style="font-size:0.8rem; font-weight:800; color:#475569; text-transform:uppercase;">☕ At Basecamp</div>
+                          <div style="font-size:1rem; font-weight:700;">Ready for next Round!</div>
+                        `}
+                      </div>
+                    </li>
+                  `;
+                }).join("")}
+              </ul>
+            </section>
+
+            ${state.showBadges ? `
+              <aside class="badges-aside" aria-label="Live Badges celebration feed">
+                <h2 style="font-size:1.15rem; font-weight:900; color:#92400e;">🏅 Live Badges</h2>
+                ${state.badges.map(b => `
+                  <div class="badge-item">
+                    <div style="font-weight:900; font-size:1rem;">${b.emoji} ${b.title}</div>
+                    <div style="font-weight:700; font-size:0.9rem; color:#0f172a;">${b.recipient}</div>
+                    <div style="font-size:0.82rem; color:#475569;">${b.detail}</div>
+                  </div>
+                `).join("")}
+              </aside>
+            ` : ""}
+          </div>
+        </div>
+      `;
+    }
+
+    function renderDashboardVariantC() {
+      const activeLegs = getActiveLegs();
+      const { nextRound, list: onDeck } = getOnDeckLegs();
+      const totalKm = getTotalCompletedLegs() * 5;
+
+      return `
+        <div class="dash-wrap dash-c">
+          <div class="d-header">
+            <div>
+              <h1 style="font-size:clamp(1.4rem, 2.3vw, 2.1rem); font-weight:900;">🔥 Frigid Feet 2027 · Basecamp Lodge Board</h1>
+              <p style="color:#d6d3d1; font-size:1rem;">Round ${state.currentRound} of 10 · ${state.clockLabel} · <strong style="color:#4ade80;">${totalKm} km run together</strong></p>
+            </div>
+            ${renderDashboardControls()}
+          </div>
+
+          <div class="d-columns">
+            <!-- Stage 1: Out on Course -->
+            <section class="stage-col stage-col--live">
+              <h2 class="stage-title" style="color:#7dd3fc;">1. Out on Course (${activeLegs.length})</h2>
+              ${activeLegs.length === 0 ? `<p style="color:#a8a29e;">No Runners out right now — cozy Basecamp break!</p>` : activeLegs.map(({ team, leg, elapsed }) => `
+                <div class="stage-card">
+                  <div style="display:flex; justify-content:space-between; align-items:baseline;">
+                    <strong style="font-size:1.35rem;">${leg.runner}</strong>
+                    <span style="font-family:var(--font-mono); font-size:1.4rem; font-weight:900; color:#38bdf8;">${elapsed}m</span>
+                  </div>
+                  <div style="color:#d6d3d1; font-size:0.98rem;">${team.name} · ${leg.course}</div>
+                  <div style="color:#fde68a; font-size:0.9rem; font-weight:700; margin-top:0.25rem;">${formatEta(elapsed, leg.etaMin)}</div>
+                </div>
+              `).join("")}
+            </section>
+
+            <!-- Stage 2: On Deck -->
+            <section class="stage-col stage-col--deck">
+              <h2 class="stage-title" style="color:#fbbf24;">2. On Deck · Round ${nextRound}</h2>
+              <div class="stage-card" style="text-align:center; border-color:#f59e0b; background:#2e2012;">
+                <div style="font-size:0.9rem; font-weight:800; color:#fde68a; text-transform:uppercase;">Starts at ${state.nextRoundTime}</div>
+                <div style="font-family:var(--font-mono); font-size:2.6rem; font-weight:900; color:#fbbf24; line-height:1.1;">
+                  ${formatCountdown(state.nextRoundSecondsLeft)}
+                </div>
+                <div style="font-size:0.9rem; color:#fef3c7;">Gloves on & lace up!</div>
+              </div>
+              <ul style="list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:0.6rem;">
+                ${onDeck.map(({ team, leg }) => `
+                  <li class="stage-card" style="padding:0.75rem 0.95rem;">
+                    <strong style="font-size:1.15rem;">${leg.runner}</strong>
+                    <div style="font-size:0.9rem; color:#d6d3d1;">${team.name} · ${leg.course}</div>
+                  </li>
+                `).join("")}
+              </ul>
+            </section>
+
+            <!-- Stage 3: Team 50K Progress + Badges -->
+            <section class="stage-col stage-col--teams">
+              <h2 class="stage-title" style="color:#4ade80;">3. 50K Progress (A–Z)</h2>
+              ${state.teams.map(team => {
+                const done = team.legs.filter(l => l.status === "completed").length;
+                return `
+                  <div class="stage-card" style="padding:0.8rem 0.95rem;">
+                    <div style="display:flex; justify-content:space-between; align-items:baseline;">
+                      <strong style="font-size:1.15rem;">${team.name}</strong>
+                      <strong style="color:#4ade80;">${done * 5}/50 km</strong>
+                    </div>
+                    ${renderSegBar(team)}
+                  </div>
+                `;
+              }).join("")}
+
+              ${state.showBadges ? `
+                <div style="margin-top:0.35rem; border-top:1px solid #44403c; padding-top:0.85rem;">
+                  <h3 style="font-size:0.95rem; text-transform:uppercase; color:#fbbf24; margin-bottom:0.5rem;">🏅 Recent Badges</h3>
+                  <ul style="list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:0.45rem; font-size:0.92rem;">
+                    ${state.badges.slice(0, 3).map(b => `<li>${b.emoji} <strong>${b.title}</strong> — ${b.recipient}</li>`).join("")}
+                  </ul>
+                </div>
+              ` : ""}
+            </section>
+          </div>
+        </div>
+      `;
+    }
+
+    // ===== Main Render =====
+    const appRoot = document.getElementById("app-root");
+    const variantLabelEl = document.getElementById("variant-label");
+    const surfMobileBtn = document.getElementById("surf-mobile");
+    const surfDashBtn = document.getElementById("surf-dashboard");
+
+    function render() {
+      syncUrl();
+
+      surfMobileBtn.setAttribute("aria-pressed", String(route.surface === "mobile"));
+      surfDashBtn.setAttribute("aria-pressed", String(route.surface === "dashboard"));
+      variantLabelEl.textContent = VARIANT_META[route.surface][route.variant];
+
+      document.getElementById("toggle-org").setAttribute("aria-pressed", String(state.organizerMode));
+      document.getElementById("toggle-org").textContent = `Organizer Mode: ${state.organizerMode ? "ON" : "OFF"}`;
+      document.getElementById("toggle-60m").setAttribute("aria-pressed", String(state.showOver60Demo));
+      document.getElementById("toggle-60m").textContent = `60+ Min Runner: ${state.showOver60Demo ? "ON" : "OFF"}`;
+      document.getElementById("toggle-offline").setAttribute("aria-pressed", String(state.offlineMode));
+      document.getElementById("toggle-offline").textContent = `Offline Queue: ${state.offlineMode ? "ON" : "OFF"}`;
+
+      if (route.surface === "mobile") {
+        let inner = "";
+        if (route.variant === "A") inner = renderMobileVariantA();
+        else if (route.variant === "B") inner = renderMobileVariantB();
+        else inner = renderMobileVariantC();
+        appRoot.innerHTML = `<div class="mobile-stage"><div class="phone-frame">${inner}</div></div>`;
+      } else {
+        if (route.variant === "A") appRoot.innerHTML = renderDashboardVariantA();
+        else if (route.variant === "B") appRoot.innerHTML = renderDashboardVariantB();
+        else appRoot.innerHTML = renderDashboardVariantC();
+      }
+    }
+
+    // ===== Event Delegation =====
+    appRoot.addEventListener("click", (e) => {
+      const btn = e.target.closest("button");
+      if (!btn) return;
+
+      if (btn.id === "dash-toggle-badges") {
+        state.showBadges = !state.showBadges;
+        render();
+        return;
+      }
+      if (btn.id === "dash-toggle-chime") {
+        state.chimeEnabled = !state.chimeEnabled;
+        if (state.chimeEnabled) playGentleChime();
+        render();
+        return;
+      }
+      if (btn.dataset.selectRound) {
+        state.selectedRoundTab = Number(btn.dataset.selectRound);
+        render();
+        return;
+      }
+      if (btn.dataset.action === "mass-start") {
+        startNextRoundMass();
+        return;
+      }
+      if (btn.dataset.action && btn.dataset.team && btn.dataset.round) {
+        mutateLeg(btn.dataset.team, Number(btn.dataset.round), btn.dataset.action);
+      }
+    });
+
+    appRoot.addEventListener("change", (e) => {
+      const sel = e.target.closest("select[data-course-team]");
+      if (!sel) return;
+      const team = state.teams.find(t => t.id === sel.dataset.courseTeam);
+      const leg = team?.legs.find(l => l.round === Number(sel.dataset.courseRound));
+      if (leg) {
+        leg.course = sel.value;
+        announceStatus(`Course updated to ${sel.value}.`);
+      }
+    });
+
+    // Prototype Demo Bar Listeners
+    document.getElementById("toggle-org").addEventListener("click", () => {
+      state.organizerMode = !state.organizerMode;
+      render();
+    });
+    document.getElementById("toggle-60m").addEventListener("click", () => {
+      state.showOver60Demo = !state.showOver60Demo;
+      render();
+    });
+    document.getElementById("toggle-offline").addEventListener("click", () => {
+      state.offlineMode = !state.offlineMode;
+      if (!state.offlineMode && state.pendingSyncCount > 0) {
+        const synced = state.pendingSyncCount;
+        state.pendingSyncCount = 0;
+        showUndoToast(`Back online! Synced ${synced} queued check-in(s).`, null);
+      }
+      render();
+    });
+    document.getElementById("reset-demo").addEventListener("click", () => {
+      state = createInitialState();
+      hideToast(false);
+      render();
+    });
+
+    // Floating Switcher Listeners
+    function cycleVariant(delta) {
+      const idx = VARIANT_KEYS.indexOf(route.variant);
+      route.variant = VARIANT_KEYS[(idx + delta + VARIANT_KEYS.length) % VARIANT_KEYS.length];
+      render();
+    }
+
+    document.getElementById("prev-variant").addEventListener("click", () => cycleVariant(-1));
+    document.getElementById("next-variant").addEventListener("click", () => cycleVariant(1));
+    surfMobileBtn.addEventListener("click", () => { route.surface = "mobile"; render(); });
+    surfDashBtn.addEventListener("click", () => { route.surface = "dashboard"; render(); });
+
+    // Keyboard ← / → variant switching (ignoring inputs/selects/contenteditable)
+    window.addEventListener("keydown", (e) => {
+      const tag = document.activeElement?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || document.activeElement?.isContentEditable) {
+        return;
+      }
+      if (e.key === "ArrowLeft") { e.preventDefault(); cycleVariant(-1); }
+      if (e.key === "ArrowRight") { e.preventDefault(); cycleVariant(1); }
+    });
+
+    // Live 1-second countdown tick
+    setInterval(() => {
+      if (state.nextRoundSecondsLeft > 0) {
+        state.nextRoundSecondsLeft -= 1;
+        // Update only countdown text if present to avoid disrupting focus/DOM
+        const activeEl = document.activeElement;
+        if (!activeEl || activeEl === document.body || activeEl === appRoot) {
+          render();
+        }
+      }
+    }, 1000);
+
+    render();
+  </script>
+</body>
+</html>
