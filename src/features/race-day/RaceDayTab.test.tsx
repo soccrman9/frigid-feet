@@ -687,4 +687,52 @@ describe('RaceDayTab — Polar Field Log Variant B timeline, check-ins, Thumb Do
       screen.getByRole('button', { name: /all done today — view event recap/i }),
     ).toBeInTheDocument();
   });
+
+  it('never leaks an opted-out Runner private 5K time in LegEditorDialog to teammates and preserves durationSeconds on Course edits', async () => {
+    const { api, eventId, snapshot, lakeLoop, frostbite, alex, legFor } =
+      await createRaceDayFixture();
+    saveParticipantId(eventId, alex.id);
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+
+    render(
+      <ThemeProvider>
+        <EventDataProvider
+          eventApi={api}
+          eventId={eventId}
+          initialSnapshot={snapshot}
+          initialGrants={['participant']}
+        >
+          <AppShell initialTab="race-day" />
+        </EventDataProvider>
+      </ThemeProvider>,
+    );
+
+    // Switch to Round 1 where Maya (showTimesOnLeaderboard = false) completed with 27:00 (1620s)
+    const rail = screen.getByRole('region', { name: /rounds 1 to 10/i });
+    await user.click(within(rail).getByRole('button', { name: /^round 1\b/i }));
+
+    const mayaR1Leg = legFor(frostbite.id, 1);
+    expect(mayaR1Leg.durationSeconds).toBe(1620);
+
+    const mayaR1Row = screen.getByTestId(`leg-row-${mayaR1Leg.id}`);
+    expect(within(mayaR1Row).getByTestId(`leg-result-${mayaR1Leg.id}`)).toHaveTextContent('5K ✓');
+    expect(mayaR1Row).not.toHaveTextContent('27:00');
+
+    // Teammate Alex opens LegEditorDialog for Maya's completed Leg
+    await user.click(within(mayaR1Row).getByRole('button', { name: /edit maya chen round 1 leg/i }));
+
+    const dialog = screen.getByRole('dialog');
+    expect(within(dialog).queryByLabelText(/watch time/i)).not.toBeInTheDocument();
+    expect(dialog).not.toHaveTextContent('27:00');
+    expect(dialog).toHaveTextContent(/5k time kept private by runner/i);
+
+    // Alex updates Course to Lake Loop 5K and saves — Maya's private durationSeconds (1620) must be preserved
+    await user.selectOptions(within(dialog).getByLabelText(/^course$/i), lakeLoop.id);
+    await user.click(within(dialog).getByRole('button', { name: /save leg/i }));
+
+    const updatedSnap = await api.getEventSnapshot(eventId);
+    const updatedLeg = updatedSnap.legs.find((l) => l.id === mayaR1Leg.id)!;
+    expect(updatedLeg.courseId).toBe(lakeLoop.id);
+    expect(updatedLeg.durationSeconds).toBe(1620);
+  });
 });

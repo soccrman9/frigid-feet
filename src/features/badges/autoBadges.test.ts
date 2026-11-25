@@ -3,6 +3,7 @@ import type { EventSnapshot, Leg, Participant, SupplyClaim, SupplyItem, Team } f
 import {
   AUTO_BADGE_CATALOG,
   evaluateAutoBadges,
+  groupEarnedBadges,
   resolveOrganizerBadgeAwards,
 } from './autoBadges';
 
@@ -561,5 +562,32 @@ describe('evaluateAutoBadges — Participant auto-calculated Badges', () => {
     expect(resolved[0].recipientName).toBe('Frostbite Fighters');
     expect(resolved[1].recipientType).toBe('participant');
     expect(resolved[1].recipientName).toBe('Maya Chen');
+  });
+
+  it('groups earned auto-Badges in canonical catalog order and omits unearned Badges', () => {
+    const teamA = makeTeam({ id: 't1', name: 'Alpha' });
+    const teamB = makeTeam({ id: 't2', name: 'Bravo' });
+    const runnerA = makeParticipant({ id: 'p1', displayName: 'Alex', teamId: 't1', isFirst5k: true });
+    const runnerB = makeParticipant({ id: 'p2', displayName: 'Sam', teamId: 't2' });
+
+    const evaluated = evaluateAutoBadges(
+      makeSnapshot({
+        teams: [teamA, teamB],
+        participants: [runnerA, runnerB],
+        legs: [
+          makeLeg({ id: 'l1', teamId: 't1', roundNumber: 1, runnerId: 'p1', status: 'completed' }),
+          makeLeg({ id: 'l2', teamId: 't2', roundNumber: 1, runnerId: 'p2', status: 'completed' }),
+        ],
+      }),
+    );
+
+    const teamGroups = groupEarnedBadges('team', evaluated.teamBadges);
+    expect(teamGroups.map((g) => g.badge.id)).toEqual(['full_squad']);
+    expect(teamGroups[0].earners.map((e) => e.teamName)).toEqual(['Alpha', 'Bravo']);
+
+    const participantGroups = groupEarnedBadges('participant', evaluated.participantBadges);
+    expect(participantGroups.map((g) => g.badge.id)).toEqual(['first_5k_club', 'dawn_patrol']);
+    expect(participantGroups[0].earners.map((e) => e.participantName)).toEqual(['Alex']);
+    expect(participantGroups[1].earners.map((e) => e.participantName)).toEqual(['Alex', 'Sam']);
   });
 });

@@ -138,7 +138,7 @@ export function OrganizerCoursesEditor() {
     if (rawUrl) {
       const safe = toSafeHttpsUrl(rawUrl);
       if (!safe) {
-        setErrorMessage('External route URL must be a valid https:// link (500 characters or fewer).');
+        setErrorMessage('External Course URL must be a valid https:// link (500 characters or fewer).');
         return;
       }
       externalRouteUrl = safe;
@@ -551,7 +551,7 @@ export function OrganizerCoursesEditor() {
 
           <div>
             <label htmlFor="org-course-external-url" className={LABEL_CLASS} style={{ color: 'var(--ink-secondary)' }}>
-              External route URL (optional https://)
+              External Course URL (optional https://)
             </label>
             <input
               id="org-course-external-url"

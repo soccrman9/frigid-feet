@@ -380,7 +380,7 @@ export function TeamsTab() {
           )}
         </div>
 
-        {/* Welcoming explanatory copy for Supporters and non-Runner RSVPs */}
+        {/* Welcoming explanatory copy for Supporters and other RSVP statuses */}
         {activeParticipant && !isGoingRunner && (
           <div
             className="mt-3 flex items-start gap-2.5 rounded-md border p-3 text-sm"
@@ -485,7 +485,7 @@ export function TeamsTab() {
         ) : (
           sortedTeams.map((team) => {
             const members = membersByTeamId.get(team.id) ?? [];
-            const isUsersTeam = activeParticipant?.teamId === team.id;
+            const isParticipantTeam = activeParticipant?.teamId === team.id;
             return (
               <TeamCard
                 key={team.id}
@@ -493,10 +493,10 @@ export function TeamsTab() {
                 teamMembers={members}
                 allTeams={sortedTeams}
                 legs={snapshot.legs}
-                isUsersTeam={isUsersTeam}
+                isParticipantTeam={isParticipantTeam}
                 isOrganizer={isOrganizer}
                 canJoin={isFreeAgent}
-                isRunnerOnAnotherTeam={isRunnerOnTeam && !isUsersTeam}
+                isRunnerOnAnotherTeam={isRunnerOnTeam && !isParticipantTeam}
                 isOnline={isOnline}
                 busy={busy}
                 confirmingLeave={confirmingLeaveTeamId === team.id}

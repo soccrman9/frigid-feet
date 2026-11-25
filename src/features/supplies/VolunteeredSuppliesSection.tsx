@@ -1,27 +1,8 @@
 import { useState, type FormEvent } from 'react';
-import {
-  Check,
-  Coffee,
-  PackagePlus,
-  Pencil,
-  Plus,
-  ShieldPlus,
-  Trash2,
-  UtensilsCrossed,
-} from 'lucide-react';
+import { Check, PackagePlus, Pencil, Plus, Trash2 } from 'lucide-react';
 import type { Participant, SupplyCategory, SupplyItem } from '../../types/domain';
+import { SupplyCategoryIcon } from './SupplyCategoryIcon';
 import { getSupplyCategoryLabel, SUPPLY_CATEGORIES } from './supplyConstants';
-
-function CategoryIcon({ category }: { category: SupplyCategory }) {
-  switch (category) {
-    case 'food':
-      return <UtensilsCrossed size={14} strokeWidth={2.2} aria-hidden="true" />;
-    case 'drinks':
-      return <Coffee size={14} strokeWidth={2.2} aria-hidden="true" />;
-    case 'gear_first_aid':
-      return <ShieldPlus size={14} strokeWidth={2.2} aria-hidden="true" />;
-  }
-}
 
 interface VolunteeredSuppliesSectionProps {
   items: SupplyItem[];
@@ -450,7 +431,7 @@ export function VolunteeredSuppliesSection({
                             color: 'var(--ink-secondary)',
                           }}
                         >
-                          <CategoryIcon category={item.category} />
+                          <SupplyCategoryIcon category={item.category} size={14} />
                           <span>{getSupplyCategoryLabel(item.category)}</span>
                         </span>
                       </div>

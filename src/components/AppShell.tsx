@@ -12,6 +12,7 @@ import {
   X,
 } from 'lucide-react';
 import { useEventData } from '../state/EventDataContext';
+import { formatEventClock } from '../lib/dateFormatting';
 import { HomeTab } from '../features/home/HomeTab';
 import { TeamsTab } from '../features/teams/TeamsTab';
 import { RaceDayTab } from '../features/race-day/RaceDayTab';
@@ -34,23 +35,6 @@ const TABS: ReadonlyArray<{
 ];
 
 const STALE_TOAST_DURATION_MS = 5_000;
-
-function formatLiveClock(date: Date, timezone?: string | null): string {
-  try {
-    return new Intl.DateTimeFormat('en-US', {
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true,
-      ...(timezone ? { timeZone: timezone } : {}),
-    }).format(date);
-  } catch {
-    return new Intl.DateTimeFormat('en-US', {
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true,
-    }).format(date);
-  }
-}
 
 function formatUpdatedAgo(lastSyncedAt: string | null, nowMs: number): string {
   if (!lastSyncedAt) return 'updated 0m ago';
@@ -114,7 +98,7 @@ export function AppShell({ initialTab = 'home' }: { initialTab?: ShellTabId }) {
     return () => window.clearTimeout(timer);
   }, [staleOverrideToast, dismissStaleOverrideToast]);
 
-  const clockLabel = formatLiveClock(now, snapshot.event.timezone);
+  const clockLabel = formatEventClock(now, snapshot.event.timezone);
   const showOfflineBanner = !isOnline || isOfflineSnapshot;
   const updatedAgoLabel = formatUpdatedAgo(lastSyncedAt, now.getTime());
 
@@ -122,7 +106,11 @@ export function AppShell({ initialTab = 'home' }: { initialTab?: ShellTabId }) {
     formEvent.preventDefault();
     const trimmed = reunlockCode.trim();
     if (!trimmed) {
-      setReunlockError('Enter the Event invite code to sync your saved check-ins.');
+      setReunlockError(
+        pendingQueueCount > 0
+          ? 'Enter the Event invite code to sync your saved check-ins.'
+          : 'Enter the Event invite code to reconnect to this Event.',
+      );
       return;
     }
     setReunlockSubmitting(true);
@@ -201,7 +189,7 @@ export function AppShell({ initialTab = 'home' }: { initialTab?: ShellTabId }) {
       </header>
 
       {/* Non-blocking offline status, local Leg queue sync pill, session re-unlock, & idle SW update chrome */}
-      {(showOfflineBanner || pendingQueueCount > 0 || showUpdatePrompt) && (
+      {(showOfflineBanner || pendingQueueCount > 0 || sessionNeedsReunlock || showUpdatePrompt) && (
         <div
           className="flex shrink-0 flex-col border-b"
           style={{
@@ -266,7 +254,7 @@ export function AppShell({ initialTab = 'home' }: { initialTab?: ShellTabId }) {
             </div>
           )}
 
-          {sessionNeedsReunlock && pendingQueueCount > 0 && (
+          {sessionNeedsReunlock && (
             <form
               data-testid="session-reunlock-banner"
               onSubmit={(e) => void handleReunlockSubmit(e)}
@@ -286,9 +274,11 @@ export function AppShell({ initialTab = 'home' }: { initialTab?: ShellTabId }) {
                   style={{ color: 'var(--shell-header)' }}
                 />
                 <span style={{ color: 'var(--ink-primary)' }}>
-                  Event access expired — your {pendingQueueCount} saved{' '}
-                  {pendingQueueCount === 1 ? 'Leg check-in is' : 'Leg check-ins are'} preserved
-                  locally. Re-enter the Event invite code to sync.
+                  {pendingQueueCount > 0
+                    ? `Event access expired — your ${pendingQueueCount} saved ${
+                        pendingQueueCount === 1 ? 'Leg check-in is' : 'Leg check-ins are'
+                      } preserved locally. Re-enter the Event invite code to sync.`
+                    : 'Event access expired — re-enter the Event invite code to resume live Event updates.'}
                 </span>
               </div>
 
@@ -321,7 +311,11 @@ export function AppShell({ initialTab = 'home' }: { initialTab?: ShellTabId }) {
                     color: 'var(--ink-on-shell)',
                   }}
                 >
-                  {reunlockSubmitting ? 'Unlocking…' : 'Re-unlock & Sync'}
+                  {reunlockSubmitting
+                    ? 'Unlocking…'
+                    : pendingQueueCount > 0
+                      ? 'Re-unlock & Sync'
+                      : 'Re-unlock'}
                 </button>
               </div>
 

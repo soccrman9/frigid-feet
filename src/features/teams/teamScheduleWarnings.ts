@@ -1,4 +1,5 @@
 import type { Leg, Participant, Team } from '../../types/domain';
+import { formatEventClock } from '../../lib/dateFormatting';
 
 export type ScheduleWarningKind = 'outside_availability' | 'back_to_back';
 
@@ -151,21 +152,7 @@ export function formatRoundStartTime(
   scheduledStartAt: string | undefined,
   timezone: string | null,
 ): string {
-  if (!scheduledStartAt) return '';
-  const date = new Date(scheduledStartAt);
-  if (Number.isNaN(date.getTime())) return '';
-  try {
-    return new Intl.DateTimeFormat('en-US', {
-      hour: 'numeric',
-      minute: '2-digit',
-      timeZone: timezone ?? undefined,
-    }).format(date);
-  } catch {
-    return new Intl.DateTimeFormat('en-US', {
-      hour: 'numeric',
-      minute: '2-digit',
-    }).format(date);
-  }
+  return formatEventClock(scheduledStartAt, timezone);
 }
 
 export const TEAM_COLOR_PRESETS: ReadonlyArray<{ hex: string; label: string }> = [
@@ -177,7 +164,7 @@ export const TEAM_COLOR_PRESETS: ReadonlyArray<{ hex: string; label: string }> =
   { hex: '#9A3412', label: 'Trail Rust' },
 ];
 
-export const TEAM_EMOJI_PRESETS: ReadonlyArray<string> = ['❄️', '🧊', '🦊', '🏔️', '🥾', '🔥', '🐻‍❄️', '⚡'];
+export const TEAM_EMOJI_PRESETS: ReadonlyArray<string> = ['🌲', '🧊', '🦊', '🏔️', '🥾', '🔥', '🐻‍❄️', '⚡'];
 
 export function sanitizeColorHex(colorHex: string | null | undefined): string | null {
   if (!colorHex) return null;

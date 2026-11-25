@@ -1,4 +1,5 @@
 import type { Course, Leg, Participant, Round } from '../../types/domain';
+import { formatEventClock } from '../../lib/dateFormatting';
 
 export type RoundPillState = 'completed' | 'active' | 'upcoming';
 
@@ -113,22 +114,7 @@ export function formatCountdown(totalSeconds: number): string {
 }
 
 export function formatClockTime(isoOrMs: string | number, timezone?: string | null): string {
-  const date = typeof isoOrMs === 'number' ? new Date(isoOrMs) : new Date(isoOrMs);
-  if (Number.isNaN(date.getTime())) return '';
-  try {
-    return new Intl.DateTimeFormat('en-US', {
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true,
-      ...(timezone ? { timeZone: timezone } : {}),
-    }).format(date);
-  } catch {
-    return new Intl.DateTimeFormat('en-US', {
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true,
-    }).format(date);
-  }
+  return formatEventClock(isoOrMs, timezone);
 }
 
 export function parseDurationInput(raw: string): { valid: boolean; seconds: number | null } {

@@ -85,7 +85,7 @@ export function AnnouncementsFeed({ announcements, timezone }: AnnouncementsFeed
             color: 'var(--ink-muted)',
           }}
         >
-          No Organizer announcements yet — check back closer to race morning for weather,
+          No Organizer announcements yet — check back closer to Event morning for weather,
           Course, and Basecamp updates.
         </div>
       ) : (

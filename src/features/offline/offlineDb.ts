@@ -120,10 +120,15 @@ export function saveEventSnapshot(
     const db = await getOfflineDb();
     if (!db) return null;
 
+    const sanitizedSnapshot: EventSnapshot = {
+      ...snapshot,
+      chipIns: [],
+    };
+
     const record: StoredEventSnapshotRecord = {
-      event_id: snapshot.event.id,
-      slug: snapshot.event.slug,
-      data: snapshot,
+      event_id: sanitizedSnapshot.event.id,
+      slug: sanitizedSnapshot.event.slug,
+      data: sanitizedSnapshot,
       last_synced_at: lastSyncedAt,
     };
     await db.put('event_snapshot', record);

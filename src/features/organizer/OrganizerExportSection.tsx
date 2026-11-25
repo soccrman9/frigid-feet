@@ -72,7 +72,7 @@ export function OrganizerExportSection() {
           Event Snapshot Backup (JSON &amp; CSV)
         </h3>
         <p className="mt-0.5 text-xs leading-relaxed" style={{ color: 'var(--ink-secondary)' }}>
-          Download a complete pre-race backup or post-Event archive directly to your device.
+          Download a complete pre-Event backup or post-Event archive directly to your device.
           Includes all {SNAPSHOT_EXPORT_TABLES.length} standard Event tables (including Organizer
           chip-in records) for <strong>{snapshot.event.name}</strong>.
         </p>

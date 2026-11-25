@@ -186,7 +186,7 @@ export function RoundLineup({
                             className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] font-bold tracking-[0.03em] uppercase"
                             style={{
                               backgroundColor: 'var(--accent-spruce-soft)',
-                              color: 'var(--accent-spruce-border)',
+                              color: 'var(--accent-spruce-ink)',
                               border: '1px solid var(--accent-spruce)',
                             }}
                           >
@@ -224,7 +224,7 @@ export function RoundLineup({
                             href={safeActivityUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="pfl-focus-ring inline-flex min-h-[32px] items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-semibold no-underline"
+                            className="pfl-focus-ring inline-flex min-h-[44px] items-center gap-1.5 rounded-full border px-3 text-xs font-semibold no-underline"
                             style={{
                               backgroundColor: 'var(--bg-rail-subtle)',
                               borderColor: 'var(--border-strong)',

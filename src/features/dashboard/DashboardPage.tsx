@@ -815,15 +815,20 @@ export function DashboardPage({ eventApi, onPlayChime }: DashboardPageProps) {
                           ? {
                               backgroundColor: 'var(--accent-spruce)',
                               borderColor: 'var(--accent-spruce-border)',
+                              borderStyle: 'solid',
                             }
                           : seg.status === 'out_on_course'
                             ? {
                                 backgroundColor: 'var(--accent-amber-cta)',
+                                backgroundImage:
+                                  'repeating-linear-gradient(-45deg, transparent 0 4px, rgba(12, 30, 48, 0.25) 4px 6px)',
                                 borderColor: 'var(--accent-amber)',
+                                borderStyle: 'solid',
                               }
                             : {
                                 backgroundColor: 'var(--bg-ground)',
                                 borderColor: 'var(--border-strong)',
+                                borderStyle: 'dashed',
                               };
 
                       return (

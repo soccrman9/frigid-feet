@@ -79,7 +79,61 @@ function ActiveEventRedirect({ eventApi }: { eventApi: EventApi }) {
   );
 }
 
-export function App({ eventApi }: { eventApi: EventApi }) {
+export function AppConfigurationErrorScreen({ message }: { message: string }) {
+  return (
+    <ThemeProvider>
+      <div
+        className="flex min-h-dvh items-center justify-center p-6"
+        style={{ backgroundColor: 'var(--bg-ground)', color: 'var(--ink-primary)' }}
+      >
+        <section
+          role="alert"
+          className="w-full max-w-md rounded-lg border-[1.5px] p-6"
+          style={{
+            backgroundColor: 'var(--bg-surface)',
+            borderColor: 'var(--border-strong)',
+          }}
+        >
+          <p
+            className="text-xs font-bold tracking-wider uppercase"
+            style={{ color: 'var(--ink-secondary)' }}
+          >
+            Winter Grind 50K
+          </p>
+          <h1 className="mt-1 text-lg font-bold" style={{ color: 'var(--ink-primary)' }}>
+            Event Backend Not Configured
+          </h1>
+          <p className="mt-2 text-sm leading-relaxed" style={{ color: 'var(--ink-muted)' }}>
+            {message}
+          </p>
+          <p className="mt-3 text-xs leading-relaxed" style={{ color: 'var(--ink-secondary)' }}>
+            Organizers: verify <code>VITE_SUPABASE_URL</code> and{' '}
+            <code>VITE_SUPABASE_ANON_KEY</code> in your hosting environment and redeploy.
+          </p>
+        </section>
+      </div>
+    </ThemeProvider>
+  );
+}
+
+export function App({
+  eventApi,
+  configurationError,
+}: {
+  eventApi?: EventApi;
+  configurationError?: string;
+}) {
+  if (configurationError || !eventApi) {
+    return (
+      <AppConfigurationErrorScreen
+        message={
+          configurationError ??
+          'Winter Grind 50K is not configured for a live Supabase backend.'
+        }
+      />
+    );
+  }
+
   return (
     <ThemeProvider>
       <BrowserRouter>

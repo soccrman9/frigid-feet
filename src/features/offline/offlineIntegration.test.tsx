@@ -376,4 +376,40 @@ describe('Offline cold-launch hydration, optimistic Leg queue, Undo & reconcilia
     const serverSnap = await api.getEventSnapshot(eventId);
     expect(serverSnap.legs.find((l) => l.id === leg1.id)?.status).toBe('completed');
   });
+
+  it('surfaces the calm re-unlock prompt after an offline cold launch reconnects with a revoked grant even when pendingQueueCount is 0', async () => {
+    const { eventId, api, organizerApi, snapshot } = await createOfflineEventFixture();
+    await saveEventSnapshot(snapshot, new Date(ROUND_1_NOW_MS - 5 * 60_000).toISOString());
+
+    // Simulate offline cold launch on /e/2027 with ZERO queued mutations
+    Object.defineProperty(navigator, 'onLine', { configurable: true, value: false });
+    window.history.replaceState(null, '', '/e/2027');
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+
+    render(<App eventApi={api} />);
+
+    expect(await screen.findByTestId('offline-banner')).toBeInTheDocument();
+    expect(screen.queryByTestId('sync-queue-pill')).not.toBeInTheDocument();
+
+    // Organizer rotates Event invite code while device is offline
+    await organizerApi.rotateEventSecret(eventId, 'invite_code', 'WINTER-FRESH');
+
+    // Device reconnects with empty queue -> refreshSnapshot gets FORBIDDEN -> re-unlock banner must appear!
+    act(() => {
+      setNavigatorOnline(true);
+    });
+
+    const reunlockBanner = await screen.findByTestId('session-reunlock-banner');
+    expect(reunlockBanner).toHaveTextContent(/event access expired/i);
+    expect(screen.queryByTestId('sync-queue-pill')).not.toBeInTheDocument();
+
+    // Participant enters the rotated invite code -> re-unlocks and clears both re-unlock & offline banners
+    await user.type(within(reunlockBanner).getByLabelText(/invite code/i), 'WINTER-FRESH');
+    await user.click(within(reunlockBanner).getByRole('button', { name: /re-unlock/i }));
+
+    await waitFor(() => {
+      expect(screen.queryByTestId('session-reunlock-banner')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('offline-banner')).not.toBeInTheDocument();
+    });
+  });
 });

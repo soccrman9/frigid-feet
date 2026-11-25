@@ -162,7 +162,7 @@ export function CoursesSection({ courses, basecampName }: CoursesSectionProps) {
                           color: 'var(--ink-primary)',
                         }}
                       >
-                        <span>Open route link</span>
+                        <span>Open Course link</span>
                         <ExternalLink size={15} strokeWidth={2.25} aria-hidden="true" />
                       </a>
                     )}

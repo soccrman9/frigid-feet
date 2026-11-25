@@ -11,13 +11,14 @@ import {
   type SetStateAction,
 } from 'react';
 import type { EventApi } from '../lib/eventApi';
-import type {
-  ApplyLegMutationInput,
-  ApplyLegMutationResult,
-  EventSnapshot,
-  GrantScope,
-  Leg,
-  Participant,
+import {
+  EventAccessError,
+  type ApplyLegMutationInput,
+  type ApplyLegMutationResult,
+  type EventSnapshot,
+  type GrantScope,
+  type Leg,
+  type Participant,
 } from '../types/domain';
 import {
   clearSavedParticipantId,
@@ -254,6 +255,9 @@ export function EventDataProvider({
     const handleOffline = () => setIsOnline(false);
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
+    if (typeof navigator !== 'undefined') {
+      setIsOnline(navigator.onLine);
+    }
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
@@ -268,16 +272,30 @@ export function EventDataProvider({
       setBaseSnapshotRaw(next);
       setLastSyncedAt(syncedAt);
       setIsOfflineSnapshot(false);
+      setSessionNeedsReunlock(false);
       persistSnapshotToIdb(next, syncedAt);
       return next;
+    } catch (err) {
+      if (
+        err instanceof EventAccessError &&
+        (err.code === 'UNAUTHORIZED' || err.code === 'FORBIDDEN')
+      ) {
+        setSessionNeedsReunlock(true);
+      }
+      throw err;
     } finally {
       setRefreshing(false);
     }
   }, [eventApi, eventId, persistSnapshotToIdb]);
 
-  // When returning online after an offline cold launch, calmly resync fresh Event data
+  const wasOfflineRef = useRef(!isOnline);
+
+  // When returning online after an offline cold launch or mid-session drop, calmly resync fresh
+  // Event data (or prompt for re-unlock if the Event grant expired or was rotated while offline).
   useEffect(() => {
-    if (isOnline && isOfflineSnapshot && !sessionNeedsReunlock) {
+    const reconnectedFromOffline = wasOfflineRef.current && isOnline;
+    wasOfflineRef.current = !isOnline;
+    if (isOnline && (isOfflineSnapshot || reconnectedFromOffline) && !sessionNeedsReunlock) {
       void refreshSnapshot().catch(() => undefined);
     }
   }, [isOnline, isOfflineSnapshot, sessionNeedsReunlock, refreshSnapshot]);
@@ -508,7 +526,10 @@ export function EventDataProvider({
 
   const lockOrganizer = useCallback(() => {
     setOrganizerUiLocked(true);
-  }, []);
+    setGrants((prev) => prev.filter((scope) => scope !== 'organizer'));
+    setBaseSnapshotRaw((prev) => (prev.chipIns.length > 0 ? { ...prev, chipIns: [] } : prev));
+    void eventApi.revokeOrganizerGrant(eventId).catch(() => undefined);
+  }, [eventApi, eventId]);
 
   const organizerUnlocked = grants.includes('organizer') && !organizerUiLocked;
   const pendingQueueCount = pendingQueue.length;

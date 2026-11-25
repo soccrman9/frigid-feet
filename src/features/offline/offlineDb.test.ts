@@ -111,6 +111,33 @@ describe('offlineDb & optimisticOverlay', () => {
     expect(bySlug?.last_synced_at).toBe(syncedAt);
   });
 
+  it('strips private chipIns rows before persisting event_snapshot to IndexedDB while preserving chipInTotalCents', async () => {
+    const { eventId, snapshot } = await buildSnapshotFixture();
+    const organizerSnapshot: EventSnapshot = {
+      ...snapshot,
+      chipInTotalCents: 4500,
+      chipIns: [
+        {
+          id: 'ci-secret-1',
+          eventId,
+          participantId: snapshot.participants[0]?.id ?? null,
+          amountCents: 4500,
+          note: 'Private Venmo note',
+          recordedAt: '2027-01-09T12:00:00.000Z',
+        },
+      ],
+    };
+
+    await saveEventSnapshot(organizerSnapshot, '2027-01-09T14:15:00.000Z');
+
+    const stored = await getEventSnapshotByEventId(eventId);
+    expect(stored).not.toBeNull();
+    expect(stored?.data.chipIns).toEqual([]);
+    expect(stored?.data.chipInTotalCents).toBe(4500);
+    // Input snapshot object is not mutated
+    expect(organizerSnapshot.chipIns).toHaveLength(1);
+  });
+
   it('stores leg_mutation_queue entries and reads them in strict FIFO queued_at order', async () => {
     const { eventId, leg } = await buildSnapshotFixture();
 

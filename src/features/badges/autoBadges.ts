@@ -343,3 +343,26 @@ export function resolveOrganizerBadgeAwards(
 
   return resolved.sort((a, b) => b.award.awardedAt.localeCompare(a.award.awardedAt));
 }
+
+export interface EarnedBadgeGroup<T extends { badge: AutoBadgeDefinition }> {
+  badge: AutoBadgeDefinition;
+  earners: T[];
+}
+
+export function groupEarnedBadges<T extends { badge: AutoBadgeDefinition }>(
+  scope: AutoBadgeScope,
+  items: ReadonlyArray<T>,
+): EarnedBadgeGroup<T>[] {
+  const byBadgeId = new Map<string, T[]>();
+  for (const item of items) {
+    const list = byBadgeId.get(item.badge.id) ?? [];
+    list.push(item);
+    byBadgeId.set(item.badge.id, list);
+  }
+  return AUTO_BADGE_CATALOG.filter((b) => b.scope === scope)
+    .map((badge) => ({
+      badge,
+      earners: byBadgeId.get(badge.id) ?? [],
+    }))
+    .filter((group) => group.earners.length > 0);
+}

@@ -29,6 +29,7 @@ export interface EventApi {
   getSessionGrants(eventId: string): Promise<GrantScope[]>;
   unlockEvent(slug: string, code: string): Promise<string>;
   unlockOrganizer(eventId: string, passcode: string): Promise<boolean>;
+  revokeOrganizerGrant(eventId: string): Promise<void>;
   unlockDashboard(token: string): Promise<string>;
   rotateEventSecret(eventId: string, secretType: SecretType, newValue: string): Promise<void>;
   pingHeartbeat(): Promise<boolean>;

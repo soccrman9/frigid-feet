@@ -12,6 +12,7 @@ import {
 } from './RaceDayToasts';
 import {
   buildMilestoneToastMessage,
+  canViewLegDuration,
   generateMutationId,
   getActiveRoundNumber,
   getPrimaryCourse,
@@ -154,6 +155,24 @@ export function RaceDayTab({
     () => (editingLegId ? (snapshot.legs.find((l) => l.id === editingLegId) ?? null) : null),
     [editingLegId, snapshot.legs],
   );
+
+  const editingRunner = useMemo(
+    () =>
+      editingLeg?.runnerId
+        ? (snapshot.participants.find((p) => p.id === editingLeg.runnerId) ?? null)
+        : null,
+    [editingLeg, snapshot.participants],
+  );
+
+  const canViewEditingDuration = useMemo(() => {
+    if (!editingLeg) return false;
+    if (isOrganizer) return true;
+    return canViewLegDuration(
+      { ...editingLeg, durationSeconds: editingLeg.durationSeconds ?? 1 },
+      editingRunner,
+      activeParticipant?.id ?? null,
+    );
+  }, [editingLeg, editingRunner, activeParticipant?.id, isOrganizer]);
 
   const runLegMutation = useCallback(
     async ({
@@ -381,11 +400,11 @@ export function RaceDayTab({
       {/* Accessible main heading for Race Day (keeps 48px header ultra-slim) */}
       <h1 className="sr-only">Race Day</h1>
 
-      {/* 44px gloved-thumb segmented sub-view bar */}
+      {/* 44px+ gloved-thumb segmented sub-view bar */}
       <div
         role="tablist"
         aria-label="Race Day views"
-        className="grid h-[44px] shrink-0 grid-cols-3 gap-1.5 border-b px-2.5 py-1"
+        className="grid min-h-[48px] shrink-0 grid-cols-3 gap-1.5 border-b px-2.5 py-0.5"
         style={{
           backgroundColor: 'var(--bg-rail)',
           borderColor: 'var(--border-strong)',
@@ -403,7 +422,7 @@ export function RaceDayTab({
                 setShowInlineRecap(false);
                 setSubView(tab.id);
               }}
-              className="pfl-focus-ring flex h-full min-h-[36px] cursor-pointer items-center justify-center rounded-[5px] text-[13px] font-bold transition-colors"
+              className="pfl-focus-ring flex min-h-[44px] cursor-pointer items-center justify-center rounded-[5px] text-[13px] font-bold transition-colors"
               style={
                 isSelected
                   ? {
@@ -528,17 +547,14 @@ export function RaceDayTab({
       <LegEditorDialog
         leg={editingLeg}
         initialStatus={editingLegInitialStatus}
-        runner={
-          editingLeg?.runnerId
-            ? (snapshot.participants.find((p) => p.id === editingLeg.runnerId) ?? null)
-            : null
-        }
+        runner={editingRunner}
         team={
           editingLeg
             ? (snapshot.teams.find((t) => t.id === editingLeg.teamId) ?? null)
             : null
         }
         courses={snapshot.courses}
+        canViewDuration={canViewEditingDuration}
         nowMs={nowMs}
         saving={editingLeg !== null && busyLegId === editingLeg.id}
         onClose={() => {

@@ -264,6 +264,12 @@ export class InMemoryEventStore {
       .map((g) => g.scope);
   }
 
+  revokeGrant(authUid: string, eventId: string, scope: GrantScope): void {
+    this.removeGrants(
+      (g) => g.authUid === authUid && g.eventId === eventId && g.scope === scope,
+    );
+  }
+
   private removeGrants(predicate: (grant: SessionGrant) => boolean): void {
     for (let i = this.sessionGrants.length - 1; i >= 0; i -= 1) {
       if (predicate(this.sessionGrants[i])) {
@@ -350,7 +356,7 @@ export class InMemoryEventApi implements EventApi {
     const event = Array.from(this.store.events.values()).find((e) => e.slug === slug);
     if (!event) return null;
     const grants = this.store.getGrants(this.authUid, event.id);
-    if (grants.length === 0) return null;
+    if (!grants.some((g) => g === 'participant' || g === 'organizer')) return null;
     return { eventId: event.id, grants };
   }
 
@@ -376,6 +382,11 @@ export class InMemoryEventApi implements EventApi {
     this.store.upsertGrant(uid, eventId, 'participant');
     this.store.upsertGrant(uid, eventId, 'organizer');
     return true;
+  }
+
+  async revokeOrganizerGrant(eventId: string): Promise<void> {
+    if (!this.authUid) return;
+    this.store.revokeGrant(this.authUid, eventId, 'organizer');
   }
 
   async unlockDashboard(token: string): Promise<string> {

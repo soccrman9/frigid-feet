@@ -119,4 +119,18 @@ describe('App routing, Event invite gate, and URL stripping', () => {
     render(<App eventApi={api2} />);
     expect(await screen.findByRole('alert')).toHaveTextContent(/invalid/i);
   });
+
+  it('requires a participant or organizer grant at /e/:slug even if the session already unlocked /dashboard/:token', async () => {
+    const api = createTestApi();
+    await api.ensureSession();
+    await api.unlockDashboard('dash-token-2027');
+
+    // Session holds only 'dashboard' grant -> navigating to /e/2027 must still hit the invite gate
+    window.history.replaceState(null, '', '/e/2027');
+    render(<App eventApi={api} />);
+
+    expect(await screen.findByRole('textbox', { name: /invite code/i })).toBeInTheDocument();
+    expect(screen.queryByText('Secret Lakeside Pavilion')).not.toBeInTheDocument();
+    expect(screen.queryByText('Winter Grind 50K 2027')).not.toBeInTheDocument();
+  });
 });

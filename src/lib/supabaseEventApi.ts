@@ -218,14 +218,31 @@ function mapBadgeAward(row: Row): BadgeAward {
   };
 }
 
-function handleSupabaseError(error: { code?: string; message?: string } | null): never {
+function handleSupabaseError(
+  error: { code?: string; status?: number; message?: string } | null,
+): never {
   const message = error?.message ?? 'Request failed.';
+  const lowerMessage = message.toLowerCase();
+
   if (message.includes('Invalid invite code') || error?.code === '28000') {
-    if (message.includes('dashboard')) {
+    if (lowerMessage.includes('dashboard')) {
       throw new EventAccessError('INVALID_DASHBOARD_TOKEN', 'Invalid Basecamp Dashboard link.');
     }
     throw new EventAccessError('INVALID_INVITE_CODE', 'That invite code did not match this Event.');
   }
+
+  if (
+    error?.code === 'PGRST301' ||
+    error?.code === '401' ||
+    error?.status === 401 ||
+    lowerMessage.includes('jwt expired') ||
+    lowerMessage.includes('invalid jwt') ||
+    lowerMessage.includes('not authenticated') ||
+    lowerMessage.includes('authentication session required')
+  ) {
+    throw new EventAccessError('UNAUTHORIZED', message);
+  }
+
   if (error?.code === '42501') {
     throw new EventAccessError('FORBIDDEN', message);
   }
@@ -389,7 +406,7 @@ export class SupabaseEventApi implements EventApi {
     if (error || !data?.id) return null;
     const eventId = String(data.id);
     const grants = await this.getSessionGrants(eventId);
-    if (grants.length === 0) return null;
+    if (!grants.some((g) => g === 'participant' || g === 'organizer')) return null;
     return { eventId, grants };
   }
 
@@ -421,6 +438,13 @@ export class SupabaseEventApi implements EventApi {
     });
     if (error) handleSupabaseError(error);
     return Boolean(data);
+  }
+
+  async revokeOrganizerGrant(eventId: string): Promise<void> {
+    const { error } = await this.client.rpc('revoke_organizer_grant', {
+      p_event_id: eventId,
+    });
+    if (error) handleSupabaseError(error);
   }
 
   async unlockDashboard(token: string): Promise<string> {
@@ -489,7 +513,21 @@ export class SupabaseEventApi implements EventApi {
       this.client.from('badge_awards').select('*').eq('event_id', eventId),
     ]);
 
-    if (eventRes.error || !eventRes.data) handleSupabaseError(eventRes.error);
+    if (eventRes.error || !eventRes.data) {
+      if (eventRes.error?.code === 'PGRST116' || (!eventRes.error && !eventRes.data)) {
+        const {
+          data: { session },
+        } = await this.client.auth.getSession();
+        if (!session?.user?.id) {
+          throw new EventAccessError(
+            'UNAUTHORIZED',
+            'Your session has expired. Please re-open the Event to reconnect.',
+          );
+        }
+        throw new EventAccessError('FORBIDDEN', 'You no longer have access to this Event.');
+      }
+      handleSupabaseError(eventRes.error);
+    }
 
     let chipInTotalCents = 0;
     if (canSeeChipInTotal) {
@@ -1147,11 +1185,68 @@ export class SupabaseEventApi implements EventApi {
   }
 }
 
-export function createEventApiFromEnv(): EventApi {
-  const url = import.meta.env.VITE_SUPABASE_URL as string | undefined;
-  const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
-  if (url && anonKey && !url.includes('your-project-ref')) {
-    return new SupabaseEventApi(url, anonKey);
+export interface EventApiEnvConfig {
+  VITE_SUPABASE_URL?: string;
+  VITE_SUPABASE_ANON_KEY?: string;
+  DEV?: boolean;
+  VITE_USE_MOCK_API?: string;
+}
+
+export class EventConfigurationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'EventConfigurationError';
   }
-  return createSeededInMemoryEventApi().api;
+}
+
+function isValidSupabaseConfig(url?: string, anonKey?: string): boolean {
+  const trimmedUrl = url?.trim() ?? '';
+  const trimmedKey = anonKey?.trim() ?? '';
+  if (!trimmedUrl || !trimmedKey) return false;
+  if (
+    trimmedUrl.includes('your-project-ref') ||
+    trimmedKey.includes('your-anon-key') ||
+    trimmedKey.includes('placeholder')
+  ) {
+    return false;
+  }
+  return true;
+}
+
+export function createEventApiFromEnv(
+  overrideEnv?: EventApiEnvConfig,
+  devMockFactory?: () => EventApi,
+): EventApi {
+  const url = overrideEnv
+    ? overrideEnv.VITE_SUPABASE_URL
+    : (import.meta.env.VITE_SUPABASE_URL as string | undefined);
+  const anonKey = overrideEnv
+    ? overrideEnv.VITE_SUPABASE_ANON_KEY
+    : (import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined);
+  const isDev = overrideEnv ? Boolean(overrideEnv.DEV) : import.meta.env.DEV;
+  const useMockApi = overrideEnv
+    ? overrideEnv.VITE_USE_MOCK_API === 'true'
+    : import.meta.env.VITE_USE_MOCK_API === 'true';
+
+  if (isDev && useMockApi) {
+    if (devMockFactory) return devMockFactory();
+    if (import.meta.env.DEV) {
+      return createSeededInMemoryEventApi().api;
+    }
+  }
+
+  if (isValidSupabaseConfig(url, anonKey)) {
+    return new SupabaseEventApi(url!.trim(), anonKey!.trim());
+  }
+
+  if (isDev) {
+    if (devMockFactory) return devMockFactory();
+    if (import.meta.env.DEV) {
+      return createSeededInMemoryEventApi().api;
+    }
+  }
+
+  throw new EventConfigurationError(
+    'Winter Grind 50K is not configured for a live Supabase backend. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your deployment environment.',
+  );
 }

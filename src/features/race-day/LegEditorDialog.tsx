@@ -24,6 +24,7 @@ export interface LegEditorDialogProps {
   runner: Participant | null;
   team: Team | null;
   courses: Course[];
+  canViewDuration: boolean;
   nowMs: number;
   saving: boolean;
   onClose: () => void;
@@ -36,7 +37,15 @@ const STATUS_OPTIONS: ReadonlyArray<{ value: LegStatus; label: string }> = [
   { value: 'completed', label: 'Completed' },
 ];
 
-function computeInitialDurationText(leg: Leg, targetStatus: LegStatus, nowMs: number): string {
+function computeInitialDurationText(
+  leg: Leg,
+  targetStatus: LegStatus,
+  nowMs: number,
+  canViewDuration: boolean,
+): string {
+  if (!canViewDuration) {
+    return '';
+  }
   if (leg.durationSeconds !== null) {
     return formatElapsedSeconds(leg.durationSeconds);
   }
@@ -56,6 +65,7 @@ export function LegEditorDialog({
   runner,
   team,
   courses,
+  canViewDuration,
   nowMs,
   saving,
   onClose,
@@ -71,7 +81,7 @@ export function LegEditorDialog({
     leg?.courseId ?? primaryCourse?.id ?? '',
   );
   const [durationText, setDurationText] = useState<string>(
-    leg ? computeInitialDurationText(leg, effectiveInitialStatus, nowMs) : '',
+    leg ? computeInitialDurationText(leg, effectiveInitialStatus, nowMs, canViewDuration) : '',
   );
   const [activityUrl, setActivityUrl] = useState<string>(leg?.externalActivityUrl ?? '');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -85,12 +95,12 @@ export function LegEditorDialog({
     const nextStatus = initialStatus ?? leg.status;
     setStatus(nextStatus);
     setCourseId(leg.courseId ?? primaryCourse?.id ?? '');
-    setDurationText(computeInitialDurationText(leg, nextStatus, nowMsRef.current));
+    setDurationText(computeInitialDurationText(leg, nextStatus, nowMsRef.current, canViewDuration));
     setActivityUrl(leg.externalActivityUrl ?? '');
     setErrorMessage(null);
-    // Re-initialize form only when opening a different Leg or initialStatus mode
+    // Re-initialize form only when opening a different Leg, initialStatus mode, or duration visibility changes
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [legId, initialStatus]);
+  }, [legId, initialStatus, canViewDuration]);
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -120,7 +130,7 @@ export function LegEditorDialog({
   const handleStatusChange = (nextStatus: LegStatus) => {
     setStatus(nextStatus);
     setErrorMessage(null);
-    if (nextStatus === 'completed' && !durationText.trim() && leg.startedAt) {
+    if (canViewDuration && nextStatus === 'completed' && !durationText.trim() && leg.startedAt) {
       const startedMs = Date.parse(leg.startedAt);
       if (!Number.isNaN(startedMs)) {
         const elapsed = Math.max(1, Math.round((nowMs - startedMs) / 1000));
@@ -148,12 +158,16 @@ export function LegEditorDialog({
 
     let durationSeconds: number | null = null;
     if (targetStatus === 'completed') {
-      const parsed = parseDurationInput(durationText);
-      if (!parsed.valid) {
-        setErrorMessage('Enter duration as MM:SS (e.g. 27:30), H:MM:SS, minutes, or leave blank.');
-        return;
+      if (canViewDuration) {
+        const parsed = parseDurationInput(durationText);
+        if (!parsed.valid) {
+          setErrorMessage('Enter duration as MM:SS (e.g. 27:30), H:MM:SS, minutes, or leave blank.');
+          return;
+        }
+        durationSeconds = parsed.seconds;
+      } else {
+        durationSeconds = leg.durationSeconds;
       }
-      durationSeconds = parsed.seconds;
     }
 
     let startedAt: string | null = leg.startedAt;
@@ -212,7 +226,7 @@ export function LegEditorDialog({
               Edit Round {leg.roundNumber} Leg
             </h1>
             <p className="text-xs font-medium" style={{ color: 'var(--ink-secondary)' }}>
-              {runner ? runner.displayName : 'Unassigned Runner'}
+              {runner ? runner.displayName : 'Open slot'}
               {team ? ` · ${team.name}` : ''}
             </p>
           </div>
@@ -304,52 +318,65 @@ export function LegEditorDialog({
         </div>
 
         {/* Optional watch duration (editable or blank) when completed */}
-        {status === 'completed' && (
-          <div className="flex flex-col gap-1">
-            <div className="flex items-center justify-between gap-2">
-              <label
-                htmlFor="leg-editor-duration"
-                className="text-xs font-bold tracking-wider uppercase"
-                style={{ color: 'var(--ink-secondary)' }}
-              >
-                Watch Time (optional)
-              </label>
-              {durationText.trim() !== '' && (
-                <button
-                  type="button"
-                  onClick={() => setDurationText('')}
-                  className="pfl-focus-ring min-h-[36px] cursor-pointer rounded border px-2.5 text-xs font-bold"
-                  style={{
-                    backgroundColor: 'var(--bg-rail-subtle)',
-                    borderColor: 'var(--border-structural)',
-                    color: 'var(--ink-primary)',
-                  }}
+        {status === 'completed' &&
+          (canViewDuration ? (
+            <div className="flex flex-col gap-1">
+              <div className="flex items-center justify-between gap-2">
+                <label
+                  htmlFor="leg-editor-duration"
+                  className="text-xs font-bold tracking-wider uppercase"
+                  style={{ color: 'var(--ink-secondary)' }}
                 >
-                  Clear time
-                </button>
-              )}
+                  Watch Time (optional)
+                </label>
+                {durationText.trim() !== '' && (
+                  <button
+                    type="button"
+                    onClick={() => setDurationText('')}
+                    className="pfl-focus-ring min-h-[44px] cursor-pointer rounded border px-3 text-xs font-bold"
+                    style={{
+                      backgroundColor: 'var(--bg-rail-subtle)',
+                      borderColor: 'var(--border-structural)',
+                      color: 'var(--ink-primary)',
+                    }}
+                  >
+                    Clear time
+                  </button>
+                )}
+              </div>
+              <input
+                id="leg-editor-duration"
+                type="text"
+                inputMode="numeric"
+                placeholder="e.g. 27:30 (or leave blank)"
+                value={durationText}
+                onChange={(e) => setDurationText(e.target.value)}
+                className="pfl-focus-ring font-telemetry min-h-[44px] rounded-md border-[1.5px] px-3 text-sm font-semibold"
+                style={{
+                  backgroundColor: 'var(--bg-ground)',
+                  borderColor: 'var(--border-strong)',
+                  color: 'var(--ink-primary)',
+                }}
+              />
+              <p className="text-xs" style={{ color: 'var(--ink-secondary)' }}>
+                {runner?.showTimesOnLeaderboard
+                  ? 'Speed Leaderboard is ON for this Runner — time is visible to friends.'
+                  : 'Private by default — only this Runner sees their 5K time.'}
+              </p>
             </div>
-            <input
-              id="leg-editor-duration"
-              type="text"
-              inputMode="numeric"
-              placeholder="e.g. 27:30 (or leave blank)"
-              value={durationText}
-              onChange={(e) => setDurationText(e.target.value)}
-              className="pfl-focus-ring font-telemetry min-h-[44px] rounded-md border-[1.5px] px-3 text-sm font-semibold"
+          ) : (
+            <p
+              className="rounded-md border px-3 py-2 text-xs font-medium"
               style={{
-                backgroundColor: 'var(--bg-ground)',
-                borderColor: 'var(--border-strong)',
-                color: 'var(--ink-primary)',
+                backgroundColor: 'var(--bg-rail-subtle)',
+                borderColor: 'var(--border-structural)',
+                color: 'var(--ink-secondary)',
               }}
-            />
-            <p className="text-xs" style={{ color: 'var(--ink-secondary)' }}>
-              {runner?.showTimesOnLeaderboard
-                ? 'Speed Leaderboard is ON for this Runner — time is visible to friends.'
-                : 'Private by default — only this Runner sees their 5K time.'}
+            >
+              5K time kept private by Runner — saving Course, status, or activity link updates
+              preserves their existing time.
             </p>
-          </div>
-        )}
+          ))}
 
         {/* Optional external https:// activity link */}
         <div className="flex flex-col gap-1">
