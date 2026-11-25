@@ -22,7 +22,7 @@ interface TeamCardProps {
   teamMembers: readonly Participant[];
   allTeams?: readonly Team[];
   legs: readonly Leg[];
-  isUsersTeam: boolean;
+  isParticipantTeam: boolean;
   isOrganizer?: boolean;
   canJoin: boolean;
   isRunnerOnAnotherTeam: boolean;
@@ -42,7 +42,7 @@ export function TeamCard({
   teamMembers,
   allTeams = [],
   legs,
-  isUsersTeam,
+  isParticipantTeam,
   isOrganizer = false,
   canJoin,
   isRunnerOnAnotherTeam,
@@ -68,14 +68,14 @@ export function TeamCard({
   }
 
   const willAutoDeleteOnLeave =
-    isUsersTeam && teamMembers.length <= 1 && coverage.completedCount === 0;
+    isParticipantTeam && teamMembers.length <= 1 && coverage.completedCount === 0;
 
   return (
     <article
       className="overflow-hidden rounded-md border-[1.5px]"
       style={{
         backgroundColor: 'var(--bg-surface)',
-        borderColor: isUsersTeam ? 'var(--shell-header)' : 'var(--border-strong)',
+        borderColor: isParticipantTeam ? 'var(--shell-header)' : 'var(--border-strong)',
       }}
     >
       {/* Optional crisp geometric top accent bar using Team color */}
@@ -109,7 +109,7 @@ export function TeamCard({
                 {team.emoji ? `${team.emoji} ` : ''}
                 {team.name}
               </h3>
-              {isUsersTeam && (
+              {isParticipantTeam && (
                 <span
                   className="inline-flex items-center rounded border px-1.5 py-0.5 text-[11px] font-bold tracking-wide uppercase"
                   style={{
@@ -352,7 +352,7 @@ export function TeamCard({
         )}
 
         {/* Inline Leave Team confirmation prompt */}
-        {confirmingLeave && isUsersTeam && (
+        {confirmingLeave && isParticipantTeam && (
           <div
             role="alert"
             className="mt-3 rounded-md border-[1.5px] p-3"
@@ -443,7 +443,7 @@ export function TeamCard({
             </button>
           )}
 
-          {isUsersTeam && !confirmingLeave && (
+          {isParticipantTeam && !confirmingLeave && (
             <button
               type="button"
               disabled={busy || !isOnline}
@@ -461,7 +461,7 @@ export function TeamCard({
           )}
         </div>
 
-        {isRunnerOnAnotherTeam && team.isOpen && !isUsersTeam && (
+        {isRunnerOnAnotherTeam && team.isOpen && !isParticipantTeam && (
           <p className="mt-2 text-xs" style={{ color: 'var(--ink-secondary)' }}>
             Leave your current Team first if you&apos;d like to join {team.name}.
           </p>

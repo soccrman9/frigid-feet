@@ -77,7 +77,7 @@ describe('CoursesSection & CourseMapPreview', () => {
     expect(within(cards[0]).getByText('5.0 km')).toBeInTheDocument();
     expect(within(cards[0]).getByText(/Flat waterfront out-and-back/i)).toBeInTheDocument();
 
-    const safeLink = within(cards[0]).getByRole('link', { name: /Open route link/i });
+    const safeLink = within(cards[0]).getByRole('link', { name: /Open Course link/i });
     expect(safeLink).toHaveAttribute('href', 'https://www.strava.com/routes/12345');
     expect(safeLink).toHaveAttribute('target', '_blank');
     expect(safeLink).toHaveAttribute('rel', expect.stringContaining('noopener'));
@@ -93,14 +93,14 @@ describe('CoursesSection & CourseMapPreview', () => {
     expect(within(cards[1]).getByRole('heading', { name: 'Pine Trail 5K' })).toBeInTheDocument();
     expect(within(cards[1]).getByText('5.05 km')).toBeInTheDocument();
     expect(within(cards[1]).getByText(/Map preview unavailable/i)).toBeInTheDocument();
-    expect(within(cards[1]).queryByRole('link', { name: /Open route link/i })).not.toBeInTheDocument();
+    expect(within(cards[1]).queryByRole('link', { name: /Open Course link/i })).not.toBeInTheDocument();
     expect(within(cards[1]).queryByRole('button', { name: /Download \.gpx/i })).not.toBeInTheDocument();
 
     // Card 3: missing GPX shows calm placeholder and rejects http:// URL
     expect(within(cards[2]).getByRole('heading', { name: 'Hill Loop 5K' })).toBeInTheDocument();
     expect(within(cards[2]).getByText('5.15 km')).toBeInTheDocument();
     expect(within(cards[2]).getByText(/GPX file not uploaded yet/i)).toBeInTheDocument();
-    expect(within(cards[2]).queryByRole('link', { name: /Open route link/i })).not.toBeInTheDocument();
+    expect(within(cards[2]).queryByRole('link', { name: /Open Course link/i })).not.toBeInTheDocument();
   });
 
   it('triggers .gpx download on button tap and toggles the watch/phone help accordion covering Garmin, Apple Watch / Strava, and no-watch reassurance', async () => {

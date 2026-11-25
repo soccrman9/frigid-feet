@@ -57,6 +57,7 @@ describe('Foundation migration and deployment artifacts', () => {
       'get_active_event_slug',
       'unlock_event',
       'unlock_organizer',
+      'revoke_organizer_grant',
       'unlock_dashboard',
       'rotate_event_secret',
       'get_chip_in_summary',
@@ -91,5 +92,36 @@ describe('Foundation migration and deployment artifacts', () => {
     const heartbeatWorkflow = readRepoFile('.github/workflows/supabase-heartbeat.yml');
     expect(heartbeatWorkflow).toContain("cron: '0 6 */3 * *'");
     expect(heartbeatWorkflow).toContain('/rest/v1/rpc/ping_heartbeat');
+  });
+
+  it('ships Polar Field Log geometric PWA icons (192x192, 512x512, maskable) wired in vite.config.ts and index.html', () => {
+    const svg = readRepoFile('public/pwa-icon.svg');
+    expect(svg).toContain('<svg');
+    expect(svg).toContain('#163A59');
+    expect(svg).not.toMatch(/snowflake|❄️/i);
+
+    const pngSignature = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+
+    const icon192 = readFileSync(resolve(repoRoot, 'public/pwa-192x192.png'));
+    expect(icon192.subarray(0, 8).equals(pngSignature)).toBe(true);
+    expect(icon192.readUInt32BE(16)).toBe(192);
+    expect(icon192.readUInt32BE(20)).toBe(192);
+
+    const icon512 = readFileSync(resolve(repoRoot, 'public/pwa-512x512.png'));
+    expect(icon512.subarray(0, 8).equals(pngSignature)).toBe(true);
+    expect(icon512.readUInt32BE(16)).toBe(512);
+    expect(icon512.readUInt32BE(20)).toBe(512);
+
+    const viteConfig = readRepoFile('vite.config.ts');
+    expect(viteConfig).toContain("src: 'pwa-192x192.png'");
+    expect(viteConfig).toContain("sizes: '192x192'");
+    expect(viteConfig).toContain("src: 'pwa-512x512.png'");
+    expect(viteConfig).toContain("sizes: '512x512'");
+    expect(viteConfig).toContain('maskable');
+
+    const indexHtml = readRepoFile('index.html');
+    expect(indexHtml).toContain('href="/pwa-icon.svg"');
+    expect(indexHtml).toContain('rel="apple-touch-icon"');
+    expect(indexHtml).toContain('href="/pwa-192x192.png"');
   });
 });

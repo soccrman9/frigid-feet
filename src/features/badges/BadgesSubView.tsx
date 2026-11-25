@@ -4,14 +4,10 @@ import { useEventData } from '../../state/EventDataContext';
 import {
   AUTO_BADGE_CATALOG,
   evaluateAutoBadges,
+  groupEarnedBadges,
   resolveOrganizerBadgeAwards,
   type AutoBadgeDefinition,
-  type EarnedParticipantBadge,
-  type EarnedTeamBadge,
 } from './autoBadges';
-
-const TEAM_AUTO_BADGES = AUTO_BADGE_CATALOG.filter((b) => b.scope === 'team');
-const PARTICIPANT_AUTO_BADGES = AUTO_BADGE_CATALOG.filter((b) => b.scope === 'participant');
 
 export function BadgesSubView() {
   const { snapshot, activeParticipant } = useEventData();
@@ -19,31 +15,15 @@ export function BadgesSubView() {
   const autoBadges = useMemo(() => evaluateAutoBadges(snapshot), [snapshot]);
   const organizerAwards = useMemo(() => resolveOrganizerBadgeAwards(snapshot), [snapshot]);
 
-  const earnedTeamGroups = useMemo(() => {
-    const byBadgeId = new Map<string, EarnedTeamBadge[]>();
-    for (const item of autoBadges.teamBadges) {
-      const list = byBadgeId.get(item.badge.id) ?? [];
-      list.push(item);
-      byBadgeId.set(item.badge.id, list);
-    }
-    return TEAM_AUTO_BADGES.map((badge) => ({
-      badge,
-      earners: byBadgeId.get(badge.id) ?? [],
-    })).filter((group) => group.earners.length > 0);
-  }, [autoBadges.teamBadges]);
+  const earnedTeamGroups = useMemo(
+    () => groupEarnedBadges('team', autoBadges.teamBadges),
+    [autoBadges.teamBadges],
+  );
 
-  const earnedParticipantGroups = useMemo(() => {
-    const byBadgeId = new Map<string, EarnedParticipantBadge[]>();
-    for (const item of autoBadges.participantBadges) {
-      const list = byBadgeId.get(item.badge.id) ?? [];
-      list.push(item);
-      byBadgeId.set(item.badge.id, list);
-    }
-    return PARTICIPANT_AUTO_BADGES.map((badge) => ({
-      badge,
-      earners: byBadgeId.get(badge.id) ?? [],
-    })).filter((group) => group.earners.length > 0);
-  }, [autoBadges.participantBadges]);
+  const earnedParticipantGroups = useMemo(
+    () => groupEarnedBadges('participant', autoBadges.participantBadges),
+    [autoBadges.participantBadges],
+  );
 
   const myPersonalBadges: AutoBadgeDefinition[] = activeParticipant
     ? (autoBadges.byParticipantId[activeParticipant.id] ?? [])

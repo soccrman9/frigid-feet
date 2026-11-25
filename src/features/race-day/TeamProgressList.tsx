@@ -94,15 +94,20 @@ export function TeamProgressList({ teams, legs }: TeamProgressListProps) {
                           ? {
                               backgroundColor: 'var(--accent-spruce)',
                               borderColor: 'var(--accent-spruce-border)',
+                              borderStyle: 'solid',
                             }
                           : status === 'out_on_course'
                             ? {
                                 backgroundColor: 'var(--accent-amber-cta)',
+                                backgroundImage:
+                                  'repeating-linear-gradient(-45deg, transparent 0 3px, rgba(12, 30, 48, 0.25) 3px 5px)',
                                 borderColor: 'var(--accent-amber-ink)',
+                                borderStyle: 'solid',
                               }
                             : {
                                 backgroundColor: 'var(--bg-ground)',
                                 borderColor: 'var(--border-strong)',
+                                borderStyle: 'dashed',
                               };
 
                       return (

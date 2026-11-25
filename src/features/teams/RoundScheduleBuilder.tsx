@@ -74,10 +74,10 @@ export function RoundScheduleBuilder({
   const [confirmingLeave, setConfirmingLeave] = useState(false);
   const [swapSourceLegId, setSwapSourceLegId] = useState<string | null>(null);
 
-  const isUsersTeam = activeParticipant?.teamId === team.id;
+  const isParticipantTeam = activeParticipant?.teamId === team.id;
   const isFreeAgent =
     activeParticipant?.rsvpStatus === 'going_runner' && activeParticipant?.teamId === null;
-  const canEditSchedule = isUsersTeam || isOrganizer;
+  const canEditSchedule = isParticipantTeam || isOrganizer;
 
   const coverage = useMemo(() => getTeamCoverage(team.id, teamLegs), [team.id, teamLegs]);
   const accentColor = sanitizeColorHex(team.colorHex);
@@ -130,7 +130,7 @@ export function RoundScheduleBuilder({
   );
 
   const willAutoDeleteOnLeave =
-    isUsersTeam && teamMembers.length <= 1 && coverage.completedCount === 0;
+    isParticipantTeam && teamMembers.length <= 1 && coverage.completedCount === 0;
 
   async function handleSwapWith(targetLeg: Leg) {
     if (!swapSourceLeg || swapSourceLeg.id === targetLeg.id) {
@@ -274,7 +274,7 @@ export function RoundScheduleBuilder({
           </div>
 
           {/* Join / Leave controls */}
-          {(isFreeAgent && team.isOpen) || isUsersTeam ? (
+          {(isFreeAgent && team.isOpen) || isParticipantTeam ? (
             <div className="mt-3 flex flex-wrap gap-2">
               {isFreeAgent && team.isOpen && (
                 <button
@@ -292,7 +292,7 @@ export function RoundScheduleBuilder({
                 </button>
               )}
 
-              {isUsersTeam && !confirmingLeave && (
+              {isParticipantTeam && !confirmingLeave && (
                 <button
                   type="button"
                   disabled={busy || !isOnline}
@@ -311,7 +311,7 @@ export function RoundScheduleBuilder({
             </div>
           ) : null}
 
-          {confirmingLeave && isUsersTeam && (
+          {confirmingLeave && isParticipantTeam && (
             <div
               role="alert"
               className="mt-3 rounded-md border-[1.5px] p-3"
@@ -431,7 +431,7 @@ export function RoundScheduleBuilder({
         </div>
 
         {/* Organizer Override notice when editing another Team's schedule */}
-        {isOrganizer && !isUsersTeam && (
+        {isOrganizer && !isParticipantTeam && (
           <div
             className="flex items-start gap-2 border-b px-4 py-2.5 text-xs"
             style={{
@@ -677,7 +677,7 @@ export function RoundScheduleBuilder({
                         )
                       ) : (
                         <>
-                          {!leg.runnerId && isUsersTeam && activeParticipant && (
+                          {!leg.runnerId && isParticipantTeam && activeParticipant && (
                             <button
                               type="button"
                               disabled={busy || !isOnline}

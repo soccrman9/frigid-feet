@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Winter Grind 50K">
+  <rect width="512" height="512" fill="#163A59" />
+  <rect x="28" y="28" width="456" height="456" rx="56" fill="none" stroke="#2D5A80" stroke-width="8" />
+
+  <!-- 10-Round Polar Field Log relay ring (maskable-safe geometry) -->
+  <circle cx="256" cy="256" r="154" fill="#0F2940" stroke="#7CC4FA" stroke-width="10" />
+  <g stroke="#F4F8FB" stroke-width="10" stroke-linecap="round">
+    <line x1="256" y1="84" x2="256" y2="112" />
+    <line x1="357" y1="117" x2="341" y2="139" />
+    <line x1="420" y1="203" x2="393" y2="211" />
+    <line x1="420" y1="309" x2="393" y2="301" />
+    <line x1="357" y1="395" x2="341" y2="373" />
+    <line x1="256" y1="428" x2="256" y2="400" />
+    <line x1="155" y1="395" x2="171" y2="373" />
+    <line x1="92" y1="309" x2="119" y2="301" />
+    <line x1="92" y1="203" x2="119" y2="211" />
+    <line x1="155" y1="117" x2="171" y2="139" />
+  </g>
+
+  <!-- Geometric Basecamp ridge & trail marker -->
+  <polygon points="154,316 236,184 282,254 316,210 358,316" fill="#F4F8FB" />
+  <polygon points="236,184 268,234 242,250 218,224" fill="#7CC4FA" />
+  <rect x="150" y="330" width="212" height="22" rx="6" fill="#F59E0B" />
+  <rect x="196" y="362" width="120" height="12" rx="4" fill="#2EA86C" />
+</svg>

@@ -6,10 +6,11 @@ import { EventDataProvider, useEventData } from '../../state/EventDataContext';
 import { HomeTab } from '../home/HomeTab';
 
 function OrganizerStateProbe() {
-  const { isOrganizer, organizerUnlocked } = useEventData();
+  const { isOrganizer, organizerUnlocked, grants, snapshot } = useEventData();
   return (
     <div data-testid="organizer-probe">
-      {isOrganizer ? 'org:true' : 'org:false'}|{organizerUnlocked ? 'unlocked:true' : 'unlocked:false'}
+      {isOrganizer ? 'org:true' : 'org:false'}|{organizerUnlocked ? 'unlocked:true' : 'unlocked:false'}|grants:
+      {grants.join(',')}|chipIns:{snapshot.chipIns.length}
     </div>
   );
 }
@@ -218,7 +219,7 @@ describe('OrganizerModePanel & EventDataContext Organizer state', () => {
     fireEvent.change(screen.getByLabelText(/Course name/i), { target: { value: 'Boardwalk 5K' } });
     fireEvent.change(screen.getByLabelText(/Description/i), { target: { value: 'Flat lakefront loop.' } });
     fireEvent.change(screen.getByLabelText(/Distance \(km\)/i), { target: { value: '5.1' } });
-    fireEvent.change(screen.getByLabelText(/External route URL/i), {
+    fireEvent.change(screen.getByLabelText(/External Course URL/i), {
       target: { value: 'javascript:alert(1)' },
     });
     fireEvent.change(screen.getByLabelText(/GPX XML/i), { target: { value: sampleGpx } });
@@ -228,7 +229,7 @@ describe('OrganizerModePanel & EventDataContext Organizer state', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(/https:\/\//i);
 
     // Fix URL and save
-    fireEvent.change(screen.getByLabelText(/External route URL/i), {
+    fireEvent.change(screen.getByLabelText(/External Course URL/i), {
       target: { value: 'https://www.strava.com/routes/101' },
     });
     await user.click(screen.getByRole('button', { name: /Save Course/i }));
@@ -440,5 +441,85 @@ describe('OrganizerModePanel & EventDataContext Organizer state', () => {
     });
     expect(screen.getByTestId('organizer-probe')).toHaveTextContent('org:true|unlocked:true');
     expect(await otherOrganizer.getSessionGrants(eventId)).not.toContain('organizer');
+  });
+
+  it('revokes server organizer grant, clears in-memory chipIns, and stops marking Legs updatedByOrganizer after Lock / Exit', async () => {
+    const user = userEvent.setup();
+    const { api, eventId } = await setupHomeFixture({ preUnlockOrganizer: true });
+
+    await api.createChipIn(eventId, {
+      participantId: null,
+      amountCents: 3500,
+      note: 'Private Venmo chip-in',
+    });
+    const team = await api.createTeam(eventId, {
+      name: 'Glacier Gliders',
+      tagline: null,
+      colorHex: '#163A59',
+      emoji: '🏔️',
+      isOpen: true,
+      lookingNote: null,
+    });
+    const runner = await api.createParticipant(eventId, {
+      displayName: 'Maya Chen',
+      rsvpStatus: 'going_runner',
+      teamId: team.id,
+      availableFromRound: 1,
+      availableToRound: 10,
+      rough5kMinutes: 28,
+      isFirst5k: false,
+      dietaryNotes: null,
+      showTimesOnLeaderboard: false,
+    });
+
+    const freshSnapshot = await api.getEventSnapshot(eventId);
+    const leg1 = freshSnapshot.legs.find((l) => l.teamId === team.id && l.roundNumber === 1)!;
+    await api.updateLeg(eventId, leg1.id, { runnerId: runner.id });
+    const snapshot = await api.getEventSnapshot(eventId);
+    const grants = await api.getSessionGrants(eventId);
+
+    render(
+      <EventDataProvider
+        eventApi={api}
+        eventId={eventId}
+        initialSnapshot={snapshot}
+        initialGrants={grants}
+      >
+        <OrganizerStateProbe />
+        <HomeTab />
+      </EventDataProvider>,
+    );
+
+    expect(screen.getByTestId('organizer-probe')).toHaveTextContent(
+      'org:true|unlocked:true|grants:participant,organizer|chipIns:1',
+    );
+
+    await user.click(screen.getByRole('button', { name: /Lock \/ Exit/i }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('organizer-probe')).toHaveTextContent(
+        'org:false|unlocked:false|grants:participant|chipIns:0',
+      );
+    });
+
+    // Server/API session grant no longer contains 'organizer'
+    expect(await api.getSessionGrants(eventId)).toEqual(['participant']);
+
+    // Post-lock Leg mutation must NOT stamp updatedByOrganizer = true
+    const result = await api.applyLegMutation({
+      eventId,
+      legId: leg1.id,
+      mutationId: 'post-lock-mut-1',
+      status: 'out_on_course',
+      startedAt: '2027-01-09T13:05:00.000Z',
+      finishedAt: null,
+      durationSeconds: null,
+      courseId: leg1.courseId,
+      externalActivityUrl: null,
+      isExplicitRevert: false,
+      clientUpdatedAt: '2027-01-09T13:05:00.000Z',
+    });
+    expect(result.applied).toBe(true);
+    expect(result.leg.updatedByOrganizer).toBe(false);
   });
 });

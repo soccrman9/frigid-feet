@@ -4,29 +4,16 @@ import {
   CheckCircle2,
   CircleDashed,
   ClipboardList,
-  Coffee,
   Hand,
   Pencil,
   Plus,
   ShieldCheck,
-  ShieldPlus,
   Trash2,
   Undo2,
-  UtensilsCrossed,
 } from 'lucide-react';
 import type { Participant, SupplyCategory, SupplyClaim, SupplyItem } from '../../types/domain';
+import { SupplyCategoryIcon } from './SupplyCategoryIcon';
 import { getWishlistSlotStatus, SUPPLY_CATEGORIES } from './supplyConstants';
-
-function CategoryIcon({ category }: { category: SupplyCategory }) {
-  switch (category) {
-    case 'food':
-      return <UtensilsCrossed size={15} strokeWidth={2.2} aria-hidden="true" />;
-    case 'drinks':
-      return <Coffee size={15} strokeWidth={2.2} aria-hidden="true" />;
-    case 'gear_first_aid':
-      return <ShieldPlus size={15} strokeWidth={2.2} aria-hidden="true" />;
-  }
-}
 
 function parseTargetSlots(raw: string): number | null {
   const trimmed = raw.trim();
@@ -499,7 +486,7 @@ export function WishlistSuppliesSection({
                   color: 'var(--ink-secondary)',
                 }}
               >
-                <CategoryIcon category={group.value} />
+                <SupplyCategoryIcon category={group.value} size={15} />
                 <span>{group.label}</span>
               </h3>
 

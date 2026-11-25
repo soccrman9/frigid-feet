@@ -715,6 +715,30 @@ $$;
 REVOKE ALL ON FUNCTION public.unlock_organizer(uuid, text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.unlock_organizer(uuid, text) TO authenticated;
 
+-- 4.4b Revoke Organizer Mode -> deletes ONLY caller's 'organizer' scope for this Event
+CREATE OR REPLACE FUNCTION public.revoke_organizer_grant(p_event_id uuid)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, extensions
+AS $$
+DECLARE
+  v_auth_uid uuid := auth.uid();
+BEGIN
+  IF v_auth_uid IS NULL THEN
+    RETURN;
+  END IF;
+
+  DELETE FROM public.session_grants
+  WHERE auth_uid = v_auth_uid
+    AND event_id = p_event_id
+    AND scope = 'organizer';
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.revoke_organizer_grant(uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.revoke_organizer_grant(uuid) TO authenticated;
+
 -- 4.5 Unlock Basecamp Dashboard -> grants read-only 'dashboard' scope
 CREATE OR REPLACE FUNCTION public.unlock_dashboard(p_token text)
 RETURNS uuid

@@ -5,6 +5,7 @@ import {
   getLegScheduleWarnings,
   getTeamCoverage,
   sortTeamsAlphabetically,
+  TEAM_EMOJI_PRESETS,
 } from './teamScheduleWarnings';
 
 function makeParticipant(overrides: Partial<Participant> & { id: string; displayName: string }): Participant {
@@ -237,5 +238,6 @@ describe('teamScheduleWarnings — calm non-blocking warnings, coverage, sorting
     ];
 
     expect(getFreeAgents(participants).map((p) => p.displayName)).toEqual(['Ben Kim', 'Zoe Park']);
+    expect(TEAM_EMOJI_PRESETS).not.toContain('❄️');
   });
 });
