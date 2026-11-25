@@ -4,9 +4,13 @@
 
 **Blocked by:** 19: Supplies tab: dietary banner, wish-list claiming & volunteered Supplies; 20: Teams tab: Team creation, Free Agents & 10-Round schedule builder; 21: Organizer Mode: passcode unlock, Event/Course/Announcement management & secret rotation
 
-**Status:** ready-for-agent
+**Status:** resolved
 
-- [ ] When Organizer Mode is unlocked, `Supplies` exposes Organizer controls to create, edit, and delete wish-list Supply items (`is_wishlist = true`, category, name, `target_slots >= 1`), and also remove any inappropriate/stale volunteered Supply entry or claim if needed.
-- [ ] When Organizer Mode is unlocked, `Teams` exposes Organizer overrides to assign any **Free Agent** onto any Team (even Closed Teams), move a Runner between Teams (using `leave_team` semantics for old scheduled Legs), create a new Team on behalf of Free Agents, and edit any Team's 10-Round schedule regardless of Team membership.
-- [ ] Inside Organizer Mode, one-tap **Export Event Snapshot (JSON)** and **Export Event Snapshot (CSV)** actions query only standard RLS-protected tables (`events`, `courses`, `announcements`, `rounds`, `teams`, `participants`, `legs`, `supply_items`, `supply_claims`, `chip_ins`, `badge_definitions`, `badge_awards`)—explicitly excluding `event_secrets`—and trigger clean client-side file downloads with valid UTF-8 JSON and properly escaped CSV output.
-- [ ] Automated tests cover Organizer wish-list CRUD, Organizer Team/Free Agent assignment overrides, JSON/CSV serialization and escaping (commas, quotes, newlines), and assertions that `event_secrets` fields are never included in exports.
+- [x] When Organizer Mode is unlocked, `Supplies` exposes Organizer controls to create, edit, and delete wish-list Supply items (`is_wishlist = true`, category, name, `target_slots >= 1`), and also remove any inappropriate/stale volunteered Supply entry or claim if needed.
+- [x] When Organizer Mode is unlocked, `Teams` exposes Organizer overrides to assign any **Free Agent** onto any Team (even Closed Teams), move a Runner between Teams (using `leave_team` semantics for old scheduled Legs), create a new Team on behalf of Free Agents, and edit any Team's 10-Round schedule regardless of Team membership.
+- [x] Inside Organizer Mode, one-tap **Export Event Snapshot (JSON)** and **Export Event Snapshot (CSV)** actions query only standard RLS-protected tables (`events`, `courses`, `announcements`, `rounds`, `teams`, `participants`, `legs`, `supply_items`, `supply_claims`, `chip_ins`, `badge_definitions`, `badge_awards`)—explicitly excluding `event_secrets`—and trigger clean client-side file downloads with valid UTF-8 JSON and properly escaped CSV output.
+- [x] Automated tests cover Organizer wish-list CRUD, Organizer Team/Free Agent assignment overrides, JSON/CSV serialization and escaping (commas, quotes, newlines), and assertions that `event_secrets` fields are never included in exports.
+
+## Comments
+
+- Resolved on integration branch `feat/winter-grind-50k` (merged at `335c202`; post-code-review verified at `ce2ea1e` with `npm run typecheck`, 57/57 test files / 224/224 tests passing, and clean `npm run build`).

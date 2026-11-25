@@ -4,12 +4,16 @@
 
 **Blocked by:** 24: Mobile Race Day timeline, individual Leg check-ins, thumb dock & Undo; 26: Live auto-calculated Badges & Organizer superlatives
 
-**Status:** ready-for-agent
+**Status:** resolved
 
-- [ ] `Race Day` → `Speed Board` sub-view is viewable by all signed-in Participants and ranks **only** Runners with `show_times_on_leaderboard = true` individually by fastest single timed 5K Leg and average 5K time across their timed completed Legs (strictly zero Team speed rankings).
-- [ ] Runners with `show_times_on_leaderboard = false` (or timed-blank Legs) never appear on the Speed Leaderboard and their durations are never exposed; a gentle note explains that joining is completely optional via the Participant profile toggle.
-- [ ] **Event Recap** view is reachable both from a card/link on `Home` and from the `Race Day` Thumb-Zone Action Dock's *"All Done Today — View Event Recap"* button.
-- [ ] **Event Recap** displays the Organizer's optional `events.recap_note`, Event-wide total km completed, alphabetical Team 50K completions/progress, and the full showcase of auto-calculated Badges and Organizer-awarded superlatives.
-- [ ] One-tap **Copy Event Recap** (`>=44px` target) copies a clean, emoji-friendly recap summary formatted for iMessage/WhatsApp chats to the clipboard with visual confirmation.
-- [ ] One-tap **Copy My Run Summary** (`>=44px` target, labeled with neutral copy and a *"Great for Strava or group chat"* hint so non-fitness-app friends feel equally included) copies the active Participant's completed Legs/km, Team, Courses run, and earned Badges (omitting individual times unless the Participant opted in or explicitly has their own times).
-- [ ] Automated tests verify Speed Leaderboard filtering/sorting/privacy boundaries, Event Recap rendering, and clipboard formatter outputs for both copy buttons (including Supporters and Runners with zero or multiple Legs).
+- [x] `Race Day` → `Speed Board` sub-view is viewable by all signed-in Participants and ranks **only** Runners with `show_times_on_leaderboard = true` individually by fastest single timed 5K Leg and average 5K time across their timed completed Legs (strictly zero Team speed rankings).
+- [x] Runners with `show_times_on_leaderboard = false` (or timed-blank Legs) never appear on the Speed Leaderboard and their durations are never exposed; a gentle note explains that joining is completely optional via the Participant profile toggle.
+- [x] **Event Recap** view is reachable both from a card/link on `Home` and from the `Race Day` Thumb-Zone Action Dock's *"All Done Today — View Event Recap"* button.
+- [x] **Event Recap** displays the Organizer's optional `events.recap_note`, Event-wide total km completed, alphabetical Team 50K completions/progress, and the full showcase of auto-calculated Badges and Organizer-awarded superlatives.
+- [x] One-tap **Copy Event Recap** (`>=44px` target) copies a clean, emoji-friendly recap summary formatted for iMessage/WhatsApp chats to the clipboard with visual confirmation.
+- [x] One-tap **Copy My Run Summary** (`>=44px` target, labeled with neutral copy and a *"Great for Strava or group chat"* hint so non-fitness-app friends feel equally included) copies the active Participant's completed Legs/km, Team, Courses run, and earned Badges (omitting individual times unless the Participant opted in or explicitly has their own times).
+- [x] Automated tests verify Speed Leaderboard filtering/sorting/privacy boundaries, Event Recap rendering, and clipboard formatter outputs for both copy buttons (including Supporters and Runners with zero or multiple Legs).
+
+## Comments
+
+- Resolved on integration branch `feat/winter-grind-50k` (merged at `90d8b7e`; post-code-review verified at `ce2ea1e` with `npm run typecheck`, 57/57 test files / 224/224 tests passing, and clean `npm run build`).
